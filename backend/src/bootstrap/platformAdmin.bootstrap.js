@@ -48,7 +48,7 @@ async function createPlatformAdminIfNotExists() {
       [hashedPassword]
     );
 
-    console.log("🚀 Platform admin bootstrapped successfully");
+    //console.log("🚀 Platform admin bootstrapped successfully");
   } catch (error) {
     console.error("❌ Bootstrap failed:", error.message);
   }

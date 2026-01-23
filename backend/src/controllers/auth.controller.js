@@ -1,4 +1,6 @@
-const { registerUser } = require("../services/auth.service");
+const { registerUser, loginUser } = require("../services/auth.service");
+
+/* ================= REGISTER ================= */
 
 async function register(req, res) {
   try {
@@ -11,14 +13,12 @@ async function register(req, res) {
       ccode,
     } = req.body;
 
-    // Required field check
     if (!uname || !uemail || !upassword || !uconfirmpassword) {
       return res.status(400).json({
         message: "Required fields are missing",
       });
     }
 
-    // Confirm password validation
     if (upassword !== uconfirmpassword) {
       return res.status(400).json({
         message: "Passwords do not match",
@@ -44,11 +44,7 @@ async function register(req, res) {
   }
 }
 
-module.exports = { register };
-
-//login
-
-const { loginUser } = require("../services/auth.service");
+/* ================= LOGIN ================= */
 
 async function login(req, res) {
   try {
@@ -60,11 +56,14 @@ async function login(req, res) {
       });
     }
 
-    const result = await loginUser({ uemail, upassword });
+    const { token, userType, redirectTo } =
+      await loginUser({ uemail, upassword });
 
     return res.status(200).json({
       message: "Login successful",
-      ...result,
+      token,
+      userType,
+      redirectTo,
     });
   } catch (error) {
     return res.status(401).json({
@@ -72,4 +71,6 @@ async function login(req, res) {
     });
   }
 }
-module.exports = { register, login };
+
+
+module.exports = {register,login};

@@ -2,12 +2,31 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 
+import PlatformAdminLayout from "./layouts/PlatformAdminLayout";
+import Dashboard from "./pages/platformAdmin/Dashboard";
+import PendingChurches from "./pages/platformAdmin/PendingChurches";
+import AllChurches from "./pages/platformAdmin/AllChurches";
+import PlatformUsers from "./pages/platformAdmin/PlatformUsers";
+import EmployeeAssignments from "./pages/platformAdmin/EmployeeAssignments";
+import SecurityLogs from "./pages/platformAdmin/SecurityLogs";
+import AdminProfile from "./pages/platformAdmin/AdminProfile";
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
+
+        <Route path="/admin" element={<PlatformAdminLayout />}>
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="pending-churches" element={<PendingChurches />} />
+          <Route path="all-churches" element={<AllChurches />} />
+          <Route path="platform-users" element={<PlatformUsers />} />
+          <Route path="employee-assignments" element={<EmployeeAssignments />} />
+          <Route path="security-logs" element={<SecurityLogs />} />
+          <Route path="profile" element={<AdminProfile />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );

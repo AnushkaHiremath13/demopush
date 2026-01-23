@@ -12,6 +12,8 @@ export default function Login() {
     upassword: "",
   });
 
+ 
+  // 2️⃣ Handle input change
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -19,19 +21,26 @@ export default function Login() {
     });
   };
 
-  const handleLogin = async () => {
-    try {
-      const res = await api("/auth/login", {
-        method: "POST",
-        body: JSON.stringify(formData),
-      });
+  // 3️⃣ Handle login
+ const handleLogin = async () => {
+  try {
+    const res = await api("/auth/login", {
+      method: "POST",
+      body: JSON.stringify(formData),
+    });
 
-      localStorage.setItem("token", res.token);
-      navigate("/dashboard");
-    } catch (err) {
-      alert(err.message);
-    }
-  };
+    // store token + role info
+    localStorage.setItem("token", res.token);
+    localStorage.setItem("userType", res.userType);
+
+    // ✅ backend-controlled redirect
+    navigate(res.redirectTo);
+
+  } catch (err) {
+    alert(err.message);
+  }
+};
+
 
   /* 🔐 GOOGLE LOGIN (placeholder for now) */
   const handleGoogleLogin = () => {
