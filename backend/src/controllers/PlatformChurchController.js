@@ -1,8 +1,4 @@
 const {
-  registerChurch,
-  getPendingChurches,
-  approveChurch,
-  rejectChurch,
   assignChurchAuthority,
   suspendChurch,
   activateChurch,
@@ -10,37 +6,8 @@ const {
 
 const pool = require("../config/db");
 
-/* ================= REGISTER CHURCH ================= */
-async function register(req, res) {
-  try {
-    const { ccode, cname, ccity, cstate } = req.body;
 
-    if (!ccode || !cname) {
-      return res.status(400).json({
-        message: "Church code and church name are required",
-      });
-    }
-
-    const church = await registerChurch({
-      ccode,
-      cname,
-      ccity,
-      cstate,
-      createdby: req.user.uid,
-    });
-
-    return res.status(201).json({
-      message: "Church registered successfully and pending approval",
-      church,
-    });
-  } catch (error) {
-    return res.status(400).json({
-      message: error.message,
-    });
-  }
-}
-
-/* ================= GET ALL APPROVED & ACTIVE CHURCHES ================= */
+/* ================= GET ALL APPROVED CHURCHES ================= */
 async function getAllChurches(req, res) {
   try {
     const result = await pool.query(`
@@ -48,11 +15,14 @@ async function getAllChurches(req, res) {
         cid,
         ccode,
         cname,
+        cemail,
+        ccity,
+        cstate,
+        ccountry,
         cstatus
       FROM tblchurch
       WHERE approvalstatus = 'APPROVED'
-        AND cstatus = 'ACTIVE'
-      ORDER BY cid DESC
+      ORDER BY createdat DESC
     `);
 
     return res.status(200).json({
@@ -68,54 +38,6 @@ async function getAllChurches(req, res) {
   }
 }
 
-/* ================= GET PENDING CHURCHES ================= */
-async function fetchPending(req, res) {
-  try {
-    const churches = await getPendingChurches();
-    return res.status(200).json({ churches });
-  } catch (error) {
-    console.error("Fetch pending churches error:", error.message);
-    return res.status(400).json({ message: error.message });
-  }
-}
-
-/* ================= APPROVE CHURCH ================= */
-async function approve(req, res) {
-  try {
-    const { cid } = req.params;
-
-    const church = await approveChurch({
-      cid,
-      approvedby: req.user.uid,
-    });
-
-    return res.status(200).json({
-      message: "Church approved and activated successfully",
-      church,
-    });
-  } catch (error) {
-    return res.status(400).json({ message: error.message });
-  }
-}
-
-/* ================= REJECT CHURCH ================= */
-async function reject(req, res) {
-  try {
-    const { cid } = req.params;
-
-    const church = await rejectChurch({
-      cid,
-      approvedby: req.user.uid,
-    });
-
-    return res.status(200).json({
-      message: "Church rejected successfully",
-      church,
-    });
-  } catch (error) {
-    return res.status(400).json({ message: error.message });
-  }
-}
 
 /* ================= SUSPEND CHURCH ================= */
 async function suspend(req, res) {
@@ -188,13 +110,51 @@ async function assignAuthority(req, res) {
   }
 }
 
+/* ================= GET CHURCH BY ID ================= */
+async function getChurchById(req, res) {
+  try {
+    const { churchId } = req.params;
+
+    const result = await pool.query(
+      `
+      SELECT
+        cid,
+        ccode,
+        cname,
+        cdenomination,
+        cemail,
+        caddress,
+        ccity,
+        cstate,
+        ccountry,
+        cpincode,
+        ctimezone,
+        cstatus,
+        csubscriptionplan,
+        createdat
+      FROM tblchurch
+      WHERE cid = $1
+      `,
+      [churchId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Church not found" });
+    }
+
+    return res.json({ church: result.rows[0] });
+  } catch (err) {
+    console.error("Get church error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+
+
 module.exports = {
-  register,
-  fetchPending,
-  approve,
-  reject,
   assignAuthority,
   getAllChurches,
   suspend,
   activate,
+  getChurchById,
 };

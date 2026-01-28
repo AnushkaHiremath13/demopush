@@ -1,8 +1,131 @@
+// import { useState } from "react";
+// import { useNavigate } from "react-router-dom";
+// import { api } from "../api/api";
+// //import "./auth.css";
+// import church from "../assets/church.png";
+
+// export default function Register() {
+//   const navigate = useNavigate();
+
+//   const [formData, setFormData] = useState({
+//     uname: "",
+//     uemail: "",
+//     uphone: "",
+//     ccode: "",
+//     upassword: "",
+//     uconfirmpassword: "",
+//   });
+
+//   const handleChange = (e) => {
+//     setFormData({
+//       ...formData,
+//       [e.target.name]: e.target.value,
+//     });
+//   };
+
+//   const handleRegister = async () => {
+//     try {
+//       const res = await api("/auth/register", {
+//         method: "POST",
+//         body: JSON.stringify(formData),
+//       });
+
+//       alert(res.message);
+//       navigate("/");
+//     } catch (err) {
+//       alert(err.message);
+//     }
+//   };
+
+//   const handleGoogleRegister = () => {
+//     alert("Google registration will be enabled soon");
+//     // Later: window.location.href = "http://localhost:5000/api/auth/google";
+//   };
+
+//   return (
+//     <div className="auth-wrapper register-layout">
+//       <div className="auth-form">
+//         <div className="form-box">
+//           <h1>Register</h1>
+
+//           <input
+//             type="text"
+//             placeholder="Your full name"
+//             name="uname"
+//             value={formData.uname}
+//             onChange={handleChange}
+//           />
+
+//           <input
+//             type="email"
+//             placeholder="Email"
+//             name="uemail"
+//             value={formData.uemail}
+//             onChange={handleChange}
+//           />
+
+//           <input
+//             type="text"
+//             placeholder="Contact number"
+//             name="uphone"
+//             value={formData.uphone}
+//             onChange={handleChange}
+//           />
+
+//           <input
+//             type="text"
+//             placeholder="Church Code"
+//             name="ccode"
+//             value={formData.ccode}
+//             onChange={handleChange}
+//           />
+
+//           <input
+//             type="password"
+//             placeholder="Set Password"
+//             name="upassword"
+//             value={formData.upassword}
+//             onChange={handleChange}
+//           />
+
+//           <input
+//             type="password"
+//             placeholder="Confirm Password"
+//             name="uconfirmpassword"
+//             value={formData.uconfirmpassword}
+//             onChange={handleChange}
+//           />
+
+//           <button className="primary-btn" onClick={handleRegister}>
+//             Next
+//           </button>
+
+//           <p className="switch small">
+//             Already have an Account?
+//             <span onClick={() => navigate("/")}> Login</span>
+//           </p>
+
+//           <div className="or">Or</div>
+
+//           <button className="google-btn" onClick={handleGoogleRegister}>
+//             <img
+//               src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+//               alt="google"
+//             />
+//             Continue with Google
+//           </button>
+//         </div>
+//       </div>
+
+//       <div className="auth-image curved-right">
+//         <img src={church} alt="church" />
+//       </div>
+//     </div>
+//   );
+// }
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/api";
-import "./auth.css";
-import church from "../assets/church.png";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -33,93 +156,79 @@ export default function Register() {
       alert(res.message);
       navigate("/");
     } catch (err) {
-      alert(err.message);
+      alert(err.message || "Registration failed");
     }
   };
 
-  const handleGoogleRegister = () => {
-    alert("Google registration will be enabled soon");
-    // Later: window.location.href = "http://localhost:5000/api/auth/google";
-  };
-
   return (
-    <div className="auth-wrapper register-layout">
-      <div className="auth-form">
-        <div className="form-box">
-          <h1>Register</h1>
+    <div style={{ padding: 40 }}>
+      <h2>Register</h2>
 
-          <input
-            type="text"
-            placeholder="Your full name"
-            name="uname"
-            value={formData.uname}
-            onChange={handleChange}
-          />
+      <input
+        type="text"
+        placeholder="Full Name"
+        name="uname"
+        value={formData.uname}
+        onChange={handleChange}
+      />
+      <br /><br />
 
-          <input
-            type="email"
-            placeholder="Email"
-            name="uemail"
-            value={formData.uemail}
-            onChange={handleChange}
-          />
+      <input
+        type="email"
+        placeholder="Email"
+        name="uemail"
+        value={formData.uemail}
+        onChange={handleChange}
+      />
+      <br /><br />
 
-          <input
-            type="text"
-            placeholder="Contact number"
-            name="uphone"
-            value={formData.uphone}
-            onChange={handleChange}
-          />
+      <input
+        type="text"
+        placeholder="Phone Number"
+        name="uphone"
+        value={formData.uphone}
+        onChange={handleChange}
+      />
+      <br /><br />
 
-          <input
-            type="text"
-            placeholder="Church Code"
-            name="ccode"
-            value={formData.ccode}
-            onChange={handleChange}
-          />
+      <input
+        type="text"
+        placeholder="Church Code"
+        name="ccode"
+        value={formData.ccode}
+        onChange={handleChange}
+      />
+      <br /><br />
 
-          <input
-            type="password"
-            placeholder="Set Password"
-            name="upassword"
-            value={formData.upassword}
-            onChange={handleChange}
-          />
+      <input
+        type="password"
+        placeholder="Password"
+        name="upassword"
+        value={formData.upassword}
+        onChange={handleChange}
+      />
+      <br /><br />
 
-          <input
-            type="password"
-            placeholder="Confirm Password"
-            name="uconfirmpassword"
-            value={formData.uconfirmpassword}
-            onChange={handleChange}
-          />
+      <input
+        type="password"
+        placeholder="Confirm Password"
+        name="uconfirmpassword"
+        value={formData.uconfirmpassword}
+        onChange={handleChange}
+      />
+      <br /><br />
 
-          <button className="primary-btn" onClick={handleRegister}>
-            Next
-          </button>
+      <button onClick={handleRegister}>Register</button>
 
-          <p className="switch small">
-            Already have an Account?
-            <span onClick={() => navigate("/")}> Login</span>
-          </p>
-
-          <div className="or">Or</div>
-
-          <button className="google-btn" onClick={handleGoogleRegister}>
-            <img
-              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-              alt="google"
-            />
-            Continue with Google
-          </button>
-        </div>
-      </div>
-
-      <div className="auth-image curved-right">
-        <img src={church} alt="church" />
-      </div>
+      <p>
+        Already have an account?{" "}
+        <span
+          style={{ color: "blue", cursor: "pointer" }}
+          onClick={() => navigate("/")}
+        >
+          Login
+        </span>
+      </p>
     </div>
   );
 }

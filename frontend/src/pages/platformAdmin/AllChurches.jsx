@@ -1,54 +1,56 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../../styles/dashboard.css";
+
+const API_BASE = "http://localhost:5000/api";
 
 export default function AllChurches() {
   const [churches, setChurches] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const navigate = useNavigate();
+  const token = localStorage.getItem("token");
+
   /* ================= FETCH CHURCHES ================= */
   useEffect(() => {
-    fetch("http://localhost:5000/api/platform/church/all", {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-        "Content-Type": "application/json"
-      }
-    })
-      .then(async (res) => {
-        if (!res.ok) {
-          const text = await res.text();
-          throw new Error(text);
-        }
-        return res.json();
-      })
-      .then((data) => {
+    const loadChurches = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/platform/church/all`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await res.json();
         setChurches(data.churches || []);
-        setLoading(false);
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error(err);
         alert("Failed to load churches");
+      } finally {
         setLoading(false);
-      });
-  }, []);
+      }
+    };
 
-  /* ================= ACTION ================= */
+    loadChurches();
+  }, [token]);
+
+  /* ================= STATUS ACTION ================= */
   const updateStatus = async (cid, action) => {
     const endpoint =
       action === "SUSPEND"
-        ? `http://localhost:5000/api/platform/church/${cid}/suspend`
-        : `http://localhost:5000/api/platform/church/${cid}/activate`;
+        ? `${API_BASE}/platform/church/${cid}/suspend`
+        : `${API_BASE}/platform/church/${cid}/activate`;
 
     const res = await fetch(endpoint, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-        "Content-Type": "application/json"
-      }
+        Authorization: `Bearer ${token}`,
+      },
     });
 
     if (res.ok) {
-      setChurches(prev =>
-        prev.map(c =>
+      setChurches((prev) =>
+        prev.map((c) =>
           c.cid === cid
             ? { ...c, cstatus: action === "SUSPEND" ? "SUSPENDED" : "ACTIVE" }
             : c
@@ -60,7 +62,7 @@ export default function AllChurches() {
   };
 
   if (loading) {
-    return <p style={{ padding: "20px" }}>Loading churches...</p>;
+    return <p style={{ padding: 20 }}>Loading churches...</p>;
   }
 
   return (
@@ -73,8 +75,10 @@ export default function AllChurches() {
             <tr>
               <th>Church Code</th>
               <th>Name</th>
+              <th>Email</th>
               <th>City</th>
               <th>State</th>
+              <th>Country</th>
               <th>Status</th>
               <th>Action</th>
             </tr>
@@ -85,14 +89,31 @@ export default function AllChurches() {
               <tr key={church.cid}>
                 <td>{church.ccode}</td>
                 <td>{church.cname}</td>
-                <td>{church.ccity}</td>
-                <td>{church.cstate}</td>
+                <td>{church.cemail || "-"}</td>
+                <td>{church.ccity || "-"}</td>
+                <td>{church.cstate || "-"}</td>
+                <td>{church.ccountry || "-"}</td>
+
                 <td>
-                  <span className={`status-pill ${church.cstatus.toLowerCase()}`}>
+                  <span
+                    className={`status-pill ${church.cstatus.toLowerCase()}`}
+                  >
                     {church.cstatus}
                   </span>
                 </td>
-                <td>
+
+                <td className="action-cell">
+                  {/* VIEW DETAILS */}
+                  <button
+                    className="icon-btn"
+                    title="View Church"
+                    onClick={() => navigate(`/admin/church/${church.cid}`)}
+                  >
+                    👁
+                  </button>
+
+
+                  {/* STATUS ACTION */}
                   {church.cstatus === "ACTIVE" ? (
                     <button
                       className="reject-btn"

@@ -2,115 +2,137 @@ const express = require("express");
 const router = express.Router();
 
 const { authenticatePlatform } = require("../middleware/auth");
+
+/* ================= DASHBOARD ================= */
 const { getDashboardStats } = require("../controllers/DashboardController");
 
+/* ================= SECURITY LOGS ================= */
+const { getSecurityLogs } = require("../controllers/SecurityLogController");
+
+/* ================= CHURCH APPLICANTS (PRE-APPROVAL) ================= */
 const {
-  register,
-  fetchPending,
-  approve,
-  reject,
-  assignAuthority,
-  getAllChurches,
-  suspend,
-  activate,
-} = require("../controllers/PlatformChurchController");
+  getChurchApplicants,
+  getChurchApplicantById,
+  createChurchApplicant,
+  approveChurchApplicant,
+  rejectChurchApplicant,
+} = require("../controllers/ChurchApplicantController");
 
-/* ================= CHURCH REGISTRATION ================= */
-
+/* CREATE CHURCH APPLICATION */
 router.post(
-  "/church/register",
+  "/church-applicants",
   authenticatePlatform,
-  register
+  createChurchApplicant
 );
 
-/* ================= ALL APPROVED CHURCHES ================= */
+/* GET ALL PENDING APPLICATIONS */
+router.get(
+  "/church-applicants",
+  authenticatePlatform,
+  getChurchApplicants
+);
 
+/* GET SINGLE APPLICATION */
+router.get(
+  "/church-applicants/:applicationId",
+  authenticatePlatform,
+  getChurchApplicantById
+);
+
+/* APPROVE APPLICATION */
+router.post(
+  "/church-applicants/:applicationId/approve",
+  authenticatePlatform,
+  approveChurchApplicant
+);
+
+/* REJECT APPLICATION */
+router.post(
+  "/church-applicants/:applicationId/reject",
+  authenticatePlatform,
+  rejectChurchApplicant
+);
+
+/* ================= CHURCHES (POST-APPROVAL) ================= */
+const {
+  getAllChurches,
+  assignAuthority,
+  suspend,
+  activate,
+  getChurchById,
+} = require("../controllers/PlatformChurchController");
+
+/* GET ALL APPROVED & ACTIVE CHURCHES */
 router.get(
   "/church/all",
   authenticatePlatform,
   getAllChurches
 );
 
-/* ================= PENDING CHURCHES ================= */
-
+/* GET SINGLE CHURCH BY ID ✅ (USED BY ApprovedChurchDetails) */
 router.get(
-  "/church/pending",
+  "/church/:churchId",
   authenticatePlatform,
-  fetchPending
+  getChurchById
 );
 
-/* ================= APPROVAL ACTIONS ================= */
-
-router.post(
-  "/church/:cid/approve",
-  authenticatePlatform,
-  approve
-);
-
-router.post(
-  "/church/:cid/reject",
-  authenticatePlatform,
-  reject
-);
-
-/* ================= AUTHORITY ================= */
-
+/* ASSIGN CHURCH AUTHORITY */
 router.post(
   "/church/:cid/assign-authority",
   authenticatePlatform,
   assignAuthority
 );
 
-/* ================= STATUS CONTROL ================= */
-
+/* SUSPEND CHURCH */
 router.post(
   "/church/:cid/suspend",
   authenticatePlatform,
   suspend
 );
 
+/* ACTIVATE CHURCH */
 router.post(
   "/church/:cid/activate",
   authenticatePlatform,
   activate
 );
 
-/* ================= DASHBOARD ================= */
-
-router.get(
-  "/dashboard",
-  authenticatePlatform,
-  getDashboardStats
-);
-
+/* ================= PLATFORM USERS ================= */
 const {
   getUsers,
   block,
   unblock,
 } = require("../controllers/PlatformUserController");
 
-/* ================= PLATFORM USERS ================= */
-
+/* GET USERS */
 router.get(
   "/users",
   authenticatePlatform,
   getUsers
 );
 
+/* BLOCK USER */
 router.post(
   "/user/:uid/block",
   authenticatePlatform,
   block
 );
 
+/* UNBLOCK USER */
 router.post(
   "/user/:uid/unblock",
   authenticatePlatform,
   unblock
 );
 
-const { getSecurityLogs } = require("../controllers/SecurityLogController");
+/* ================= DASHBOARD ================= */
+router.get(
+  "/dashboard",
+  authenticatePlatform,
+  getDashboardStats
+);
 
+/* ================= SECURITY LOGS ================= */
 router.get(
   "/security-logs",
   authenticatePlatform,

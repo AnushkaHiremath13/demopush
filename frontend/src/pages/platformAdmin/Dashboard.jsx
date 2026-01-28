@@ -1,162 +1,168 @@
 import "../../styles/dashboard.css";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+const API_BASE = "http://localhost:5000/api";
+
+/* ================= DATE + AGING UTILITY ================= */
+
+function formatDateWithAging(dateString) {
+  if (!dateString) return "-";
+
+  const date = new Date(dateString);
+  const formattedDate = date.toLocaleDateString("en-GB");
+
+  const diffMs = Date.now() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  let aging = "Today";
+  if (diffDays === 1) aging = "1 day ago";
+  else if (diffDays > 1) aging = `${diffDays} days ago`;
+
+  return `${formattedDate} (${aging})`;
+}
 
 export default function Dashboard() {
-  const [pendingChurches, setPendingChurches] = useState([]);
-  const [stats, setStats] = useState(null);
   const token = localStorage.getItem("token");
+  const navigate = useNavigate();
 
-  /* ================= FETCH STATS ================= */
+  /* ================= STATE ================= */
 
-  useEffect(() => {
-    async function loadStats() {
-      try {
-        const res = await fetch(
-          "http://localhost:5000/api/platform/dashboard",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+  const [stats, setStats] = useState({
+    totalChurches: 0,
+    activeChurches: 0,
+    totalUsers: 0,
+  });
 
-        if (!res.ok) {
-          throw new Error(await res.text());
-        }
+  const [pendingChurches, setPendingChurches] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-        const data = await res.json();
-        setStats(data);
-      } catch (err) {
-        console.error("Dashboard stats error:", err.message);
-      }
-    }
+  /* ================= DASHBOARD STATS ================= */
 
-    loadStats();
-  }, [token]);
+  const loadDashboardStats = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/platform/dashboard`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-  /* ================= FETCH PENDING CHURCHES ================= */
+      const data = await res.json();
 
-  useEffect(() => {
-    async function loadPending() {
-      try {
-        const res = await fetch(
-          "http://localhost:5000/api/platform/church/pending",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (!res.ok) {
-          throw new Error(await res.text());
-        }
-
-        const data = await res.json();
-        setPendingChurches(data.churches || []);
-      } catch (err) {
-        console.error("Pending churches error:", err.message);
-      }
-    }
-
-    loadPending();
-  }, [token]);
-
-  /* ================= ACTION HANDLERS ================= */
-
-  const handleApprove = async (cid) => {
-    const res = await fetch(
-      `http://localhost:5000/api/platform/church/${cid}/approve`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    if (res.ok) {
-      setPendingChurches((prev) =>
-        prev.filter((church) => church.cid !== cid)
-      );
+      setStats({
+        totalChurches: data.totalchurches || 0,
+        activeChurches: data.activechurches || 0,
+        totalUsers: data.totalusers || 0,
+      });
+    } catch (err) {
+      console.error("Dashboard stats error:", err);
     }
   };
 
-  const handleReject = async (cid) => {
-    const res = await fetch(
-      `http://localhost:5000/api/platform/church/${cid}/reject`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+  /* ================= PENDING CHURCHES ================= */
 
-    if (res.ok) {
-      setPendingChurches((prev) =>
-        prev.filter((church) => church.cid !== cid)
-      );
+  const loadPending = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/platform/church-applicants`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await res.json();
+      setPendingChurches(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Pending churches error:", err);
     }
   };
 
-  if (!stats) {
-    return <p>Loading dashboard...</p>;
+  /* ================= INITIAL LOAD ================= */
+
+
+
+ useEffect(() => {
+  const init = async () => {
+    try {
+      await Promise.all([
+        loadDashboardStats(),
+        loadPending(),
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  init();
+}, []);
+
+  /* ================= LOADING ================= */
+
+  if (loading) {
+    return <p style={{ padding: 20 }}>Loading dashboard...</p>;
   }
+
+  /* ================= UI ================= */
 
   return (
     <div className="dashboard">
       <h1 className="dashboard-title">Platform Overview</h1>
 
+      {/* ===== STATS CARDS ===== */}
       <div className="stats-grid">
         <div className="stat-card">
-          <p className="stat-title">Total Churches</p>
-          <h2 className="stat-number">{stats.totalchurches}</h2>
+          <div className="stat-title">Total Churches</div>
+          <div className="stat-number"><p>{stats.totalChurches}</p></div>
         </div>
 
         <div className="stat-card">
-          <p className="stat-title">Active Churches</p>
-          <h2 className="stat-number">{stats.activechurches}</h2>
+          <div className="stat-title">Active Churches</div>
+          <div className="stat-number"><p>{stats.activeChurches}</p></div>
         </div>
 
         <div className="stat-card">
-          <p className="stat-title">Pending Requests</p>
-          <h2 className="stat-number warn">{stats.pendingchurches}</h2>
+          <div className="stat-title">Pending Requests</div>
+          <div className="stat-number warn">
+           <p> {pendingChurches.length}</p>
+          </div>
         </div>
 
         <div className="stat-card">
-          <p className="stat-title">Total Users</p>
-          <h2 className="stat-number">{stats.totalusers}</h2>
+          <div className="stat-title">Total Users</div>
+          <div className="stat-number"><p>{stats.totalUsers}</p></div>
         </div>
       </div>
 
+      {/* ===== PENDING TABLE ===== */}
       <div className="dashboard-card large">
         <h3>Pending Church Registrations</h3>
 
         <table className="admin-table">
           <thead>
             <tr>
-              <th>Church Code</th>
-              <th>Church Name</th>
+              <th>Code</th>
+              <th>Name</th>
               <th>City</th>
               <th>State</th>
+              <th>Country</th>
+              <th>Applied</th>
               <th>Actions</th>
             </tr>
           </thead>
 
           <tbody>
             {pendingChurches.map((church) => (
-              <tr key={church.cid}>
+              <tr key={church.application_id}>
                 <td>{church.ccode}</td>
                 <td>{church.cname}</td>
                 <td>{church.ccity || "-"}</td>
                 <td>{church.cstate || "-"}</td>
-                <td>
-                  <button onClick={() => handleApprove(church.cid)}>
-                    Approve
-                  </button>
-                  <button onClick={() => handleReject(church.cid)}>
-                    Reject
+                <td>{church.ccountry || "-"}</td>
+                <td>{formatDateWithAging(church.applied_on)}</td>
+                <td className="actions">
+                  <button
+                    className="icon-btn"
+                    title="View details"
+                    onClick={() =>
+                      navigate(`/admin/church/application/${church.application_id}`)
+                    }
+                  >
+                    👁
                   </button>
                 </td>
               </tr>
@@ -164,7 +170,7 @@ export default function Dashboard() {
 
             {pendingChurches.length === 0 && (
               <tr>
-                <td colSpan="5" style={{ textAlign: "center" }}>
+                <td colSpan="7" style={{ textAlign: "center" }}>
                   No pending church requests 🎉
                 </td>
               </tr>

@@ -1,107 +1,69 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../../styles/dashboard.css";
 
 const API_BASE = "http://localhost:5000/api";
+
+/* ================= DATE + AGING ================= */
+
+function formatDateWithAging(dateString) {
+  if (!dateString) return "-";
+
+  const date = new Date(dateString);
+  const formattedDate = date.toLocaleDateString("en-GB");
+
+  const diffMs = Date.now() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  let aging = "Today";
+  if (diffDays === 1) aging = "1 day ago";
+  else if (diffDays > 1) aging = `${diffDays} days ago`;
+
+  return `${formattedDate} (${aging})`;
+}
 
 export default function PendingChurches() {
   const [pendingChurches, setPendingChurches] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  /* ================= FETCH PENDING CHURCHES ================= */
+  const token = localStorage.getItem("token");
+  const navigate = useNavigate();
 
-  const loadPendingChurches = async () => {
-    try {
-      const res = await fetch(
-        `${API_BASE}/platform/church/pending`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-
-      if (!res.ok) {
-        throw new Error("Failed to fetch pending churches");
-      }
-
-      const data = await res.json();
-      setPendingChurches(data.churches || []);
-    } catch (err) {
-      console.error("Pending churches fetch error:", err);
-      setPendingChurches([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  /* ================= FETCH PENDING ================= */
 
   useEffect(() => {
-    loadPendingChurches();
-  }, []);
+    const loadPending = async () => {
+      try {
+        const res = await fetch(
+          `${API_BASE}/platform/church-applicants`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
-  /* ================= ACTION HANDLERS ================= */
-
-  const handleApprove = async (cid) => {
-    try {
-      const res = await fetch(
-        `${API_BASE}/platform/church/${cid}/approve`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-
-      if (!res.ok) {
-        throw new Error("Approve failed");
+        const data = await res.json();
+        setPendingChurches(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Pending churches error:", err);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      setPendingChurches((prev) =>
-        prev.filter((church) => church.cid !== cid)
-      );
-    } catch (err) {
-      console.error("Approve church error:", err);
-      alert("Failed to approve church");
-    }
-  };
-
-  const handleReject = async (cid) => {
-    try {
-      const res = await fetch(
-        `${API_BASE}/platform/church/${cid}/reject`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-
-      if (!res.ok) {
-        throw new Error("Reject failed");
-      }
-
-      setPendingChurches((prev) =>
-        prev.filter((church) => church.cid !== cid)
-      );
-    } catch (err) {
-  console.error("Reject church error:", err);
-  alert("Failed to reject church");
-}
-
-  };
-
-  /* ================= UI ================= */
+    loadPending();
+  }, [token]);
 
   if (loading) {
-    return <p style={{ padding: "20px" }}>Loading pending churches...</p>;
+    return <p style={{ padding: 20 }}>Loading pending churches…</p>;
   }
 
   return (
     <div className="dashboard">
-      <h1 className="dashboard-title">Pending Church Approvals</h1>
-      <p style={{ color: "#777", marginBottom: "14px" }}>
-        Review and approve churches before they can operate on the platform.
+      <h1 className="dashboard-title">Pending Church Applications</h1>
+      <p style={{ color: "#777", marginBottom: 16 }}>
+        Review church applications before approval.
       </p>
 
       <div className="dashboard-card large">
@@ -113,36 +75,32 @@ export default function PendingChurches() {
               <th>Email</th>
               <th>City</th>
               <th>State</th>
-              <th>Requested On</th>
+              <th>Country</th>
+              <th>Applied</th>
               <th>Actions</th>
             </tr>
           </thead>
 
           <tbody>
             {pendingChurches.map((church) => (
-              <tr key={church.cid}>
+              <tr key={church.application_id}>
                 <td>{church.ccode}</td>
                 <td>{church.cname}</td>
-                <td>{church.adminemail || "-"}</td>
-                <td>{church.ccity}</td>
-                <td>{church.cstate}</td>
-                <td>
-                  {church.createdat
-                    ? new Date(church.createdat).toLocaleString()
-                    : "-"}
-                </td>
+                <td>{church.cemail || "-"}</td>
+                <td>{church.ccity || "-"}</td>
+                <td>{church.cstate || "-"}</td>
+                <td>{church.ccountry || "-"}</td>
+                <td>{formatDateWithAging(church.applied_on)}</td>
+
                 <td className="action-cell">
                   <button
-                    className="approve-btn"
-                    onClick={() => handleApprove(church.cid)}
+                    className="icon-btn"
+                    title="View Details"
+                    onClick={() =>
+                      navigate(`/admin/church/application/${church.application_id}`)
+                    }
                   >
-                    Approve
-                  </button>
-                  <button
-                    className="reject-btn"
-                    onClick={() => handleReject(church.cid)}
-                  >
-                    Reject
+                    👁
                   </button>
                 </td>
               </tr>
@@ -150,11 +108,8 @@ export default function PendingChurches() {
 
             {pendingChurches.length === 0 && (
               <tr>
-                <td
-                  colSpan="7"
-                  style={{ textAlign: "center", padding: "22px", color: "#777" }}
-                >
-                  🎉 No pending church requests
+                <td colSpan="8" style={{ textAlign: "center" }}>
+                  🎉 No pending church applications
                 </td>
               </tr>
             )}
