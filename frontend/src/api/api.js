@@ -11,7 +11,21 @@ export async function api(endpoint, options = {}) {
     },
   });
 
-  const data = await res.json();
+  // 🔐 Global unauthorized handling
+  if (res.status === 401) {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    window.location.href = "/"; // ✅ login page
+    return;
+  }
+
+  // Some endpoints (like logout) may return empty body
+  let data = {};
+  try {
+    data = await res.json();
+  } catch {
+    data = {};
+  }
 
   if (!res.ok) {
     throw new Error(data.message || "API Error");

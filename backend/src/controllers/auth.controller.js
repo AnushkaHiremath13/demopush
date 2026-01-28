@@ -74,3 +74,17 @@ async function login(req, res) {
 
 
 module.exports = {register,login};
+
+// LOGOUT
+exports.logout = async (req, res) => {
+  try {
+    // Token already verified by middleware
+    return res.status(200).json({
+      message: "Logout successful",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Logout failed",
+    });
+  }
+};
