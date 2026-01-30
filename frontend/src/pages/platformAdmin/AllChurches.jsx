@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/dashboard.css";
 
-const API_BASE = "http://localhost:5000/api";
-
 export default function AllChurches() {
   const [churches, setChurches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,7 +13,7 @@ export default function AllChurches() {
   useEffect(() => {
     const loadChurches = async () => {
       try {
-        const res = await fetch(`${API_BASE}/platform/church/all`, {
+        const res = await fetch("/api/platform/church/all", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -38,8 +36,8 @@ export default function AllChurches() {
   const updateStatus = async (cid, action) => {
     const endpoint =
       action === "SUSPEND"
-        ? `${API_BASE}/platform/church/${cid}/suspend`
-        : `${API_BASE}/platform/church/${cid}/activate`;
+        ? `/api/platform/church/${cid}/suspend`
+        : `/api/platform/church/${cid}/activate`;
 
     const res = await fetch(endpoint, {
       method: "POST",
@@ -52,7 +50,10 @@ export default function AllChurches() {
       setChurches((prev) =>
         prev.map((c) =>
           c.cid === cid
-            ? { ...c, cstatus: action === "SUSPEND" ? "SUSPENDED" : "ACTIVE" }
+            ? {
+                ...c,
+                cstatus: action === "SUSPEND" ? "SUSPENDED" : "ACTIVE",
+              }
             : c
         )
       );
@@ -103,7 +104,6 @@ export default function AllChurches() {
                 </td>
 
                 <td className="action-cell">
-                  {/* VIEW DETAILS */}
                   <button
                     className="icon-btn"
                     title="View Church"
@@ -112,19 +112,21 @@ export default function AllChurches() {
                     👁
                   </button>
 
-
-                  {/* STATUS ACTION */}
                   {church.cstatus === "ACTIVE" ? (
                     <button
                       className="reject-btn"
-                      onClick={() => updateStatus(church.cid, "SUSPEND")}
+                      onClick={() =>
+                        updateStatus(church.cid, "SUSPEND")
+                      }
                     >
                       Suspend
                     </button>
                   ) : (
                     <button
                       className="approve-btn"
-                      onClick={() => updateStatus(church.cid, "ACTIVATE")}
+                      onClick={() =>
+                        updateStatus(church.cid, "ACTIVATE")
+                      }
                     >
                       Activate
                     </button>

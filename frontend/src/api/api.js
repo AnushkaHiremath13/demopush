@@ -1,4 +1,9 @@
-const BASE_URL = "http://localhost:5000/api";
+// 
+// ✅ Environment-safe API base
+// - Local dev: uses Vite proxy (/api → backend)
+// - VPS / production: uses same-origin backend
+
+const BASE_URL = "/api";
 
 export async function api(endpoint, options = {}) {
   const token = localStorage.getItem("token");
@@ -15,11 +20,12 @@ export async function api(endpoint, options = {}) {
   if (res.status === 401) {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    window.location.href = "/"; // ✅ login page
+
+    // ✅ Works for sub-path deployment (/demopush)
+    window.location.href = "/";
     return;
   }
 
-  // Some endpoints (like logout) may return empty body
   let data = {};
   try {
     data = await res.json();

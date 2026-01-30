@@ -72,19 +72,18 @@ async function login(req, res) {
   }
 }
 
+/* ================= LOGOUT ================= */
 
-module.exports = {register,login};
+async function logout(req, res) {
+  return res.status(200).json({
+    message: "Logout successful",
+  });
+}
 
-// LOGOUT
-exports.logout = async (req, res) => {
-  try {
-    // Token already verified by middleware
-    return res.status(200).json({
-      message: "Logout successful",
-    });
-  } catch (error) {
-    return res.status(500).json({
-      message: "Logout failed",
-    });
-  }
+/* ================= EXPORTS ================= */
+
+module.exports = {
+  register,
+  login,
+  logout,
 };

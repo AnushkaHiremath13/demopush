@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "../../styles/dashboard.css";
 
-const API_BASE = "http://localhost:5000/api";
-
 export default function ApprovedChurchDetails() {
   const { churchId } = useParams();
   const navigate = useNavigate();
@@ -14,21 +12,25 @@ export default function ApprovedChurchDetails() {
 
   useEffect(() => {
     loadChurch();
+    // eslint-disable-next-line
   }, []);
 
   const loadChurch = async () => {
     try {
       const res = await fetch(
-        `${API_BASE}/platform/church/${churchId}`,
+        `/api/platform/church/${churchId}`,
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
 
       const data = await res.json();
       setChurch(data.church);
     } catch (err) {
-      console.error(err);
+      console.error("Approved church fetch error:", err);
+      setChurch(null);
     } finally {
       setLoading(false);
     }
@@ -66,11 +68,26 @@ export default function ApprovedChurchDetails() {
         <div className="details-section">
           <h4>Address</h4>
           <div className="details-list">
-            <div className="details-item"><label>Address</label><span>{church.caddress}</span></div>
-            <div className="details-item"><label>City</label><span>{church.ccity}</span></div>
-            <div className="details-item"><label>State</label><span>{church.cstate}</span></div>
-            <div className="details-item"><label>Country</label><span>{church.ccountry}</span></div>
-            <div className="details-item"><label>Pincode</label><span>{church.cpincode}</span></div>
+            <div className="details-item">
+              <label>Address</label>
+              <span>{church.caddress || "-"}</span>
+            </div>
+            <div className="details-item">
+              <label>City</label>
+              <span>{church.ccity || "-"}</span>
+            </div>
+            <div className="details-item">
+              <label>State</label>
+              <span>{church.cstate || "-"}</span>
+            </div>
+            <div className="details-item">
+              <label>Country</label>
+              <span>{church.ccountry || "-"}</span>
+            </div>
+            <div className="details-item">
+              <label>Pincode</label>
+              <span>{church.cpincode || "-"}</span>
+            </div>
           </div>
         </div>
 

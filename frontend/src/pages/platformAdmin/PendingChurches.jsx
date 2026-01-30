@@ -2,10 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/dashboard.css";
 
-const API_BASE = "http://localhost:5000/api";
-
 /* ================= DATE + AGING ================= */
-
 function formatDateWithAging(dateString) {
   if (!dateString) return "-";
 
@@ -30,23 +27,25 @@ export default function PendingChurches() {
   const navigate = useNavigate();
 
   /* ================= FETCH PENDING ================= */
-
   useEffect(() => {
     const loadPending = async () => {
       try {
-        const res = await fetch(
-          `${API_BASE}/platform/church-applicants`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const res = await fetch("/api/platform/church-applicants", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         const data = await res.json();
-        setPendingChurches(Array.isArray(data) ? data : []);
+
+        if (data.success) {
+          setPendingChurches(data.applications);
+        } else {
+          setPendingChurches([]);
+        }
       } catch (err) {
         console.error("Pending churches error:", err);
+        setPendingChurches([]);
       } finally {
         setLoading(false);
       }
@@ -97,7 +96,9 @@ export default function PendingChurches() {
                     className="icon-btn"
                     title="View Details"
                     onClick={() =>
-                      navigate(`/admin/church/application/${church.application_id}`)
+                      navigate(
+                        `/admin/church/application/${church.application_id}`
+                      )
                     }
                   >
                     👁

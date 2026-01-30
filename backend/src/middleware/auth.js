@@ -16,7 +16,7 @@ function authenticateUser(req, res, next) {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
-    return next(); // IMPORTANT
+    next();
   } catch (error) {
     return res.status(401).json({
       message: "Invalid or expired token",
@@ -27,15 +27,13 @@ function authenticateUser(req, res, next) {
 /* ================= AUTHENTICATE PLATFORM ================= */
 
 function authenticatePlatform(req, res, next) {
-  // first authenticate normally
   authenticateUser(req, res, () => {
     if (!req.user || req.user.userType !== "PLATFORM") {
       return res.status(403).json({
         message: "Platform access required",
       });
     }
-
-    return next(); // IMPORTANT
+    next();
   });
 }
 
@@ -48,30 +46,11 @@ function authenticateChurchAuthority(req, res, next) {
         message: "Church authority access required",
       });
     }
-
-    return next(); // IMPORTANT
+    next();
   });
 }
-//logout
-const jwt = require("jsonwebtoken");
 
-module.exports = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const token = authHeader.split(" ")[1];
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch (err) {
-    return res.status(401).json({ message: "Invalid token" });
-  }
-};
+/* ================= EXPORTS ================= */
 
 module.exports = {
   authenticateUser,

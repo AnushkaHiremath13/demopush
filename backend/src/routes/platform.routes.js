@@ -9,7 +9,7 @@ const { getDashboardStats } = require("../controllers/DashboardController");
 /* ================= SECURITY LOGS ================= */
 const { getSecurityLogs } = require("../controllers/SecurityLogController");
 
-/* ================= CHURCH APPLICANTS (PRE-APPROVAL) ================= */
+/* ================= CHURCH APPLICANTS ================= */
 const {
   getChurchApplicants,
   getChurchApplicantById,
@@ -18,42 +18,26 @@ const {
   rejectChurchApplicant,
 } = require("../controllers/ChurchApplicantController");
 
-/* CREATE CHURCH APPLICATION */
-router.post(
-  "/church-applicants",
-  authenticatePlatform,
-  createChurchApplicant
-);
-
-/* GET ALL PENDING APPLICATIONS */
-router.get(
-  "/church-applicants",
-  authenticatePlatform,
-  getChurchApplicants
-);
-
-/* GET SINGLE APPLICATION */
+/* ================= CHURCH APPLICANTS ROUTES ================= */
+router.post("/church-applicants", authenticatePlatform, createChurchApplicant);
+router.get("/church-applicants", authenticatePlatform, getChurchApplicants);
 router.get(
   "/church-applicants/:applicationId",
   authenticatePlatform,
   getChurchApplicantById
 );
-
-/* APPROVE APPLICATION */
 router.post(
   "/church-applicants/:applicationId/approve",
   authenticatePlatform,
   approveChurchApplicant
 );
-
-/* REJECT APPLICATION */
 router.post(
   "/church-applicants/:applicationId/reject",
   authenticatePlatform,
   rejectChurchApplicant
 );
 
-/* ================= CHURCHES (POST-APPROVAL) ================= */
+/* ================= CHURCHES ================= */
 const {
   getAllChurches,
   assignAuthority,
@@ -62,81 +46,31 @@ const {
   getChurchById,
 } = require("../controllers/PlatformChurchController");
 
-/* GET ALL APPROVED & ACTIVE CHURCHES */
-router.get(
-  "/church/all",
-  authenticatePlatform,
-  getAllChurches
-);
-
-/* GET SINGLE CHURCH BY ID ✅ (USED BY ApprovedChurchDetails) */
-router.get(
-  "/church/:churchId",
-  authenticatePlatform,
-  getChurchById
-);
-
-/* ASSIGN CHURCH AUTHORITY */
+router.get("/church/all", authenticatePlatform, getAllChurches);
+router.get("/church/:churchId", authenticatePlatform, getChurchById);
 router.post(
   "/church/:cid/assign-authority",
   authenticatePlatform,
   assignAuthority
 );
+router.post("/church/:cid/suspend", authenticatePlatform, suspend);
+router.post("/church/:cid/activate", authenticatePlatform, activate);
 
-/* SUSPEND CHURCH */
-router.post(
-  "/church/:cid/suspend",
-  authenticatePlatform,
-  suspend
-);
-
-/* ACTIVATE CHURCH */
-router.post(
-  "/church/:cid/activate",
-  authenticatePlatform,
-  activate
-);
-
-/* ================= PLATFORM USERS ================= */
+/* ================= USERS ================= */
 const {
   getUsers,
   block,
   unblock,
 } = require("../controllers/PlatformUserController");
 
-/* GET USERS */
-router.get(
-  "/users",
-  authenticatePlatform,
-  getUsers
-);
-
-/* BLOCK USER */
-router.post(
-  "/user/:uid/block",
-  authenticatePlatform,
-  block
-);
-
-/* UNBLOCK USER */
-router.post(
-  "/user/:uid/unblock",
-  authenticatePlatform,
-  unblock
-);
+router.get("/users", authenticatePlatform, getUsers);
+router.post("/user/:uid/block", authenticatePlatform, block);
+router.post("/user/:uid/unblock", authenticatePlatform, unblock);
 
 /* ================= DASHBOARD ================= */
-router.get(
-  "/dashboard",
-  authenticatePlatform,
-  getDashboardStats
-);
+router.get("/dashboard", authenticatePlatform, getDashboardStats);
 
 /* ================= SECURITY LOGS ================= */
-router.get(
-  "/security-logs",
-  authenticatePlatform,
-  getSecurityLogs
-);
+router.get("/security-logs", authenticatePlatform, getSecurityLogs);
 
 module.exports = router;

@@ -1,154 +1,168 @@
 const pool = require("../config/db");
 
-/* ================= CREATE CHURCH APPLICATION ================= */
-
-exports.createChurchApplicant = async (req, res) => {
+/* ================= GET ALL PENDING APPLICATIONS ================= */
+async function getChurchApplicants(req, res) {
   try {
-    const {
+    const result = await pool.query(`
+      SELECT
+        application_id,
+        ccode,
+        cname,
+        cemail,
+        cdenomination,
+        ccity,
+        cstate,
+        ccountry,
+        application_status,
+        applied_on
+      FROM tblchurch_applicants
+      WHERE application_status = 'PENDING'
+    `);
+
+    return res.status(200).json({
+      success: true,
+      applications: result.rows,
+    });
+  } catch (error) {
+    console.error("❌ getChurchApplicants error:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch church applications",
+    });
+  }
+}
+
+
+/* ================= GET SINGLE APPLICATION ================= */
+async function getChurchApplicantById(req, res) {
+  try {
+    const { applicationId } = req.params;
+
+    const result = await pool.query(
+      `SELECT * FROM tblchurch_applicants WHERE application_id = $1`,
+      [applicationId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Application not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      application: result.rows[0],
+    });
+  } catch (error) {
+    console.error("❌ getChurchApplicantById error:", error.message);
+    return res.status(500).json({
+      message: "Failed to fetch application",
+    });
+  }
+}
+
+/* ================= CREATE APPLICATION ================= */
+async function createChurchApplicant(req, res) {
+  try {
+    let {
       ccode,
       cname,
-      caddress,
       cemail,
+      cdenomination,
+      caddress,
       ccity,
       cstate,
       ccountry,
       cpincode,
-      cdenomination,
-      clocation,
       ctimezone,
     } = req.body;
 
-    if (!ccode || !cname) {
+    // ✅ FORCE UPPERCASE (FINAL AUTHORITY)
+    ccode = ccode.toUpperCase();
+
+    // ✅ OPTIONAL VALIDATION (recommended)
+    if (!/^[A-Z0-9]{2,10}$/.test(ccode)) {
       return res.status(400).json({
-        message: "Church code and name are required",
+        message: "Invalid church code format",
       });
     }
 
     await pool.query(
       `
       INSERT INTO tblchurch_applicants (
+        application_id,
         ccode,
         cname,
-        caddress,
         cemail,
+        cdenomination,
+        caddress,
         ccity,
         cstate,
         ccountry,
         cpincode,
-        cdenomination,
-        clocation,
-        ctimezone
+        ctimezone,
+        application_status,
+        applied_on
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+      VALUES (
+        gen_random_uuid(),
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
+        'PENDING',
+        CURRENT_DATE
+      )
       `,
       [
         ccode,
         cname,
-        caddress,
         cemail,
+        cdenomination,
+        caddress,
         ccity,
         cstate,
         ccountry,
         cpincode,
-        cdenomination,
-        clocation,
         ctimezone,
       ]
     );
 
-    res.status(201).json({
-      message: "Church application submitted successfully",
+    return res.status(201).json({
+      message: "Application submitted successfully",
     });
   } catch (error) {
-    console.error("Create applicant error:", error.message);
-    res.status(500).json({ message: "Server error" });
+    console.error("❌ createChurchApplicant error:", error.message);
+    return res.status(500).json({
+      message: "Failed to create application",
+    });
   }
-};
+}
 
-/* ================= GET ALL PENDING APPLICANTS ================= */
-
-exports.getChurchApplicants = async (req, res) => {
-  try {
-    const { rows } = await pool.query(
-      `
-      SELECT *
-      FROM tblchurch_applicants
-      WHERE application_status = 'PENDING'
-      ORDER BY applied_on DESC
-      `
-    );
-
-    res.json(rows);
-  } catch (error) {
-    console.error("Fetch applicants error:", error.message);
-    res.status(500).json({ message: "Failed to fetch applicants" });
-  }
-};
-
-/* ================= GET SINGLE APPLICANT ================= */
-
-exports.getChurchApplicantById = async (req, res) => {
-  try {
-    const { applicationId } = req.params;
-
-    const { rows } = await pool.query(
-      `
-      SELECT *
-      FROM tblchurch_applicants
-      WHERE application_id = $1
-      `,
-      [applicationId]
-    );
-
-    if (!rows.length) {
-      return res.status(404).json({
-        message: "Church applicant not found",
-      });
-    }
-
-    res.json(rows[0]);
-  } catch (error) {
-    console.error("Fetch applicant by id error:", error.message);
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-/* ================= APPROVE APPLICANT ================= */
-
-exports.approveChurchApplicant = async (req, res) => {
-  const { applicationId } = req.params;
+/* ================= APPROVE APPLICATION ================= */
+async function approveChurchApplicant(req, res) {
   const client = await pool.connect();
+  const { applicationId } = req.params;
 
   try {
     await client.query("BEGIN");
 
-    /* 1️⃣ Fetch application */
     const { rows } = await client.query(
-      `
-      SELECT *
-      FROM tblchurch_applicants
-      WHERE application_id = $1
-      `,
+      `SELECT * FROM tblchurch_applicants WHERE application_id = $1`,
       [applicationId]
     );
 
-    if (!rows.length) {
-      throw new Error("Application not found");
-    }
+    if (!rows.length) throw new Error("Application not found");
 
     const app = rows[0];
 
-    /* 2️⃣ Insert into tblchurch */
     await client.query(
       `
       INSERT INTO tblchurch (
         cid,
         ccode,
         cname,
+        cemail,
+        cdenomination,
+        caddress,
         ccity,
         cstate,
         ccountry,
-        caddress,
         cpincode,
         ctimezone,
         cstatus,
@@ -157,7 +171,7 @@ exports.approveChurchApplicant = async (req, res) => {
       )
       VALUES (
         gen_random_uuid(),
-        $1,$2,$3,$4,$5,$6,$7,$8,
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
         'ACTIVE',
         'APPROVED',
         NOW()
@@ -166,22 +180,22 @@ exports.approveChurchApplicant = async (req, res) => {
       [
         app.ccode,
         app.cname,
+        app.cemail,
+        app.cdenomination,
+        app.caddress,
         app.ccity,
         app.cstate,
         app.ccountry,
-        app.caddress,
         app.cpincode,
         app.ctimezone,
       ]
     );
 
-    /* 3️⃣ Update application status */
     await client.query(
       `
       UPDATE tblchurch_applicants
-      SET
-        application_status = 'APPROVED',
-        approved_at = NOW()
+      SET application_status = 'APPROVED',
+          approved_at = NOW()
       WHERE application_id = $1
       `,
       [applicationId]
@@ -189,36 +203,44 @@ exports.approveChurchApplicant = async (req, res) => {
 
     await client.query("COMMIT");
 
-    res.json({ message: "Church approved successfully" });
-  } catch (err) {
+    return res.json({ message: "Church approved successfully" });
+  } catch (error) {
     await client.query("ROLLBACK");
-    console.error("Approve error:", err.message);
-    res.status(500).json({ message: err.message });
+    console.error("❌ approveChurchApplicant error:", error.message);
+    return res.status(500).json({ message: error.message });
   } finally {
     client.release();
   }
-};
+}
 
-/* ================= REJECT APPLICANT ================= */
-
-exports.rejectChurchApplicant = async (req, res) => {
+/* ================= REJECT APPLICATION ================= */
+async function rejectChurchApplicant(req, res) {
   try {
     const { applicationId } = req.params;
 
     await pool.query(
       `
       UPDATE tblchurch_applicants
-      SET
-        application_status = 'REJECTED',
-        rejected_at = NOW()
+      SET application_status = 'REJECTED'
       WHERE application_id = $1
       `,
       [applicationId]
     );
 
-    res.json({ message: "Church application rejected" });
+    return res.json({ message: "Application rejected" });
   } catch (error) {
-    console.error("Reject error:", error.message);
-    res.status(500).json({ message: "Failed to reject church" });
+    console.error("❌ rejectChurchApplicant error:", error.message);
+    return res.status(500).json({
+      message: "Failed to reject application",
+    });
   }
+}
+
+/* ================= EXPORTS ================= */
+module.exports = {
+  getChurchApplicants,
+  getChurchApplicantById,
+  createChurchApplicant,
+  approveChurchApplicant,
+  rejectChurchApplicant,
 };

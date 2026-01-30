@@ -2,8 +2,6 @@ import "../../styles/dashboard.css";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const API_BASE = "http://localhost:5000/api";
-
 /* ================= DATE + AGING UTILITY ================= */
 
 function formatDateWithAging(dateString) {
@@ -41,8 +39,10 @@ export default function Dashboard() {
 
   const loadDashboardStats = async () => {
     try {
-      const res = await fetch(`${API_BASE}/platform/dashboard`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await fetch("/api/platform/dashboard", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       const data = await res.json();
@@ -61,12 +61,19 @@ export default function Dashboard() {
 
   const loadPending = async () => {
     try {
-      const res = await fetch(`${API_BASE}/platform/church-applicants`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await fetch("/api/platform/church-applicants", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       const data = await res.json();
-      setPendingChurches(Array.isArray(data) ? data : []);
+
+      if (data.success) {
+        setPendingChurches(data.applications);
+      } else {
+        setPendingChurches([]);
+      }
     } catch (err) {
       console.error("Pending churches error:", err);
     }
@@ -74,22 +81,17 @@ export default function Dashboard() {
 
   /* ================= INITIAL LOAD ================= */
 
+  useEffect(() => {
+    const init = async () => {
+      try {
+        await Promise.all([loadDashboardStats(), loadPending()]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-
- useEffect(() => {
-  const init = async () => {
-    try {
-      await Promise.all([
-        loadDashboardStats(),
-        loadPending(),
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  init();
-}, []);
+    init();
+  }, []);
 
   /* ================= LOADING ================= */
 
@@ -103,7 +105,6 @@ export default function Dashboard() {
     <div className="dashboard">
       <h1 className="dashboard-title">Platform Overview</h1>
 
-      {/* ===== STATS CARDS ===== */}
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-title">Total Churches</div>
@@ -118,7 +119,7 @@ export default function Dashboard() {
         <div className="stat-card">
           <div className="stat-title">Pending Requests</div>
           <div className="stat-number warn">
-           <p> {pendingChurches.length}</p>
+            <p>{pendingChurches.length}</p>
           </div>
         </div>
 
@@ -128,7 +129,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ===== PENDING TABLE ===== */}
       <div className="dashboard-card large">
         <h3>Pending Church Registrations</h3>
 
