@@ -1,6 +1,4 @@
-const https = require("https");
-const fs = require("fs");
-const path = require("path");
+require("dotenv").config();
 
 const app = require("./src/app");
 const createPlatformAdminIfNotExists =
@@ -8,20 +6,13 @@ const createPlatformAdminIfNotExists =
 
 (async () => {
   try {
-    // ✅ Bootstrap platform admin
     await createPlatformAdminIfNotExists();
 
-    const PORT = 5000;
+    const PORT = process.env.PORT || 5000;
 
-    // ✅ SSL configuration
-    const sslOptions = {
-      key: fs.readFileSync(path.join(__dirname, "cert", "key.pem")),
-      cert: fs.readFileSync(path.join(__dirname, "cert", "cert.pem")),
-    };
-
-    // ✅ HTTPS server
-    https.createServer(sslOptions, app).listen(PORT, () => {
-      console.log(`🔐 HTTPS Server running at https://localhost:${PORT}`);
+    // 🔐 HTTP only — HTTPS handled by Nginx
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`🚀 API running on port ${PORT}`);
     });
 
   } catch (err) {

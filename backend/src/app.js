@@ -8,17 +8,20 @@ const churchRoutes = require("./routes/church.routes");
 
 const app = express();
 
-/* ================= GLOBAL MIDDLEWARE ================= */
+/* ================= GLOBAL CONFIG ================= */
 
-// Body parser
+const API_PREFIX = process.env.API_PREFIX || "/api";
+
+/* ================= MIDDLEWARE ================= */
+
 app.use(express.json());
 
-// ✅ CORS (HTTP + HTTPS frontend supported)
 app.use(
   cors({
     origin: [
-      "http://localhost:5173",
-      "https://localhost:5173",
+      "http://localhost:5173",     // 🧪 local dev
+      "https://powaha.com",        // 🚀 VPS
+      "https://www.powaha.com",    // 🚀 VPS
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -26,10 +29,15 @@ app.use(
   })
 );
 
+/*
+🧪 LOCAL QUICK FIX (COMMENTED)
+app.use(cors());
+*/
+
 /* ================= ROUTES ================= */
 
-app.use("/api/auth", authRoutes);
-app.use("/api/platform", platformRoutes);
-app.use("/api/church", churchRoutes);
+app.use(`${API_PREFIX}/auth`, authRoutes);
+app.use(`${API_PREFIX}/platform`, platformRoutes);
+app.use(`${API_PREFIX}/church`, churchRoutes);
 
 module.exports = app;
