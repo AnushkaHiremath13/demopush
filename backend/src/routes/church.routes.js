@@ -18,26 +18,27 @@ const {
 // ✅ PUBLIC – NO AUTH
 router.post("/apply", createChurchApplicant);
 
-/* ============================================================
-   FOLLOWER APPROVAL ROUTES (CHURCH AUTHORITY)
-============================================================ */
+// /* ============================================================
+//    FOLLOWER APPROVAL ROUTES (CHURCH AUTHORITY)
+// ============================================================ */
 
-router.get(
-  "/followers/pending",
-  authenticateUser,
-  pending
-);
+// router.get(
+//   "/followers/pending",
+//   authenticateUser,
+//   pending
+// );
 
-router.patch(
-  "/followers/:uid/approve",
-  authenticateUser,
-  approve
-);
+// router.patch(
+//   "/followers/:uid/approve",
+//   authenticateUser,
+//   approve
+// );
 
-router.patch(
-  "/followers/:uid/reject",
-  authenticateUser,
-  reject
-);
+// router.patch(
+//   "/followers/:uid/reject",
+//   authenticateUser,
+//   reject
+// );
 
-module.exports = router;
+// module.exports = router;
+//commented out follower approval routes for now which is not necesssary for the plat
