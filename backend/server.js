@@ -10,11 +10,11 @@ const createPlatformAdminIfNotExists =
 
     const PORT = process.env.PORT || 5000;
 
-    // 🔐 HTTP only — HTTPS handled by Nginx
+    console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
+
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`🚀 API running on port ${PORT}`);
     });
-
   } catch (err) {
     console.error("❌ Server startup failed:", err);
     process.exit(1);

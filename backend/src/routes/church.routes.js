@@ -1,5 +1,9 @@
+// src/routes/church.routes.js (example)
+
 const express = require("express");
 const router = express.Router();
+
+const { authenticateUser } = require("../middleware/auth");
 
 const {
   pending,
@@ -7,12 +11,33 @@ const {
   reject,
 } = require("../controllers/ChurchFollowerController");
 
-const { authenticateChurchAuthority } =require("../middleware/auth");
+const {
+  createChurchApplicant,
+} = require("../controllers/ChurchApplicantController");
 
-/* ================= FOLLOWER APPROVAL ================= */
+// ✅ PUBLIC – NO AUTH
+router.post("/apply", createChurchApplicant);
 
-router.get("/church/followers/pending", authenticateChurchAuthority, pending);
-router.post("/church/follower/:uid/approve", authenticateChurchAuthority, approve);
-router.post("/church/follower/:uid/reject", authenticateChurchAuthority, reject);
+/* ============================================================
+   FOLLOWER APPROVAL ROUTES (CHURCH AUTHORITY)
+============================================================ */
+
+router.get(
+  "/followers/pending",
+  authenticateUser,
+  pending
+);
+
+router.patch(
+  "/followers/:uid/approve",
+  authenticateUser,
+  approve
+);
+
+router.patch(
+  "/followers/:uid/reject",
+  authenticateUser,
+  reject
+);
 
 module.exports = router;

@@ -1,21 +1,17 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "../../styles/dashboard.css";
+import { api } from "../../api/api";
 
 export default function ChurchDetails() {
   const { applicationId } = useParams();
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
 
   const [church, setChurch] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadDetails();
-    // eslint-disable-next-line
-  }, []);
-
   /* ================= DATE FORMATTER ================= */
+
   const formatDate = (dateValue) => {
     if (!dateValue) return "-";
     const date = new Date(dateValue);
@@ -23,63 +19,62 @@ export default function ChurchDetails() {
   };
 
   /* ================= LOAD DETAILS ================= */
-  const loadDetails = async () => {
-    try {
-      const res = await fetch(
-        `/api/platform/church-applicants/${applicationId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+
+  useEffect(() => {
+    const loadDetails = async () => {
+      try {
+        const data = await api(
+          `/platform/church-applicants/${applicationId}`
+        );
+
+        if (data?.success) {
+          setChurch(data.application);
+        } else {
+          setChurch(null);
         }
-      );
-
-      const data = await res.json();
-
-      if (data.success) {
-        setChurch(data.application);
-      } else {
+      } catch (err) {
+        console.error("Church details error:", err);
         setChurch(null);
+      } finally {
+        setLoading(false);
       }
+    };
+
+    loadDetails();
+  }, [applicationId]);
+
+  /* ================= ACTIONS ================= */
+
+  const handleApprove = async () => {
+    try {
+      await api(
+        `/platform/church-applicants/${applicationId}/approve`,
+        { method: "PATCH" }
+      );
+      navigate("/admin/dashboard", { replace: true });
     } catch (err) {
-      console.error("Church details error:", err);
-      setChurch(null);
-    } finally {
-      setLoading(false);
+      alert(err.message || "Approval failed");
     }
   };
 
-  /* ================= ACTIONS ================= */
-  const handleApprove = async () => {
-    await fetch(
-      `/api/platform/church-applicants/${applicationId}/approve`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    navigate("/admin/dashboard", { replace: true });
-  };
-
   const handleReject = async () => {
-    await fetch(
-      `/api/platform/church-applicants/${applicationId}/reject`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    navigate("/admin/dashboard", { replace: true });
+    try {
+      await api(
+        `/platform/church-applicants/${applicationId}/reject`,
+        { method: "PATCH" }
+      );
+      navigate("/admin/dashboard", { replace: true });
+    } catch (err) {
+      alert(err.message || "Rejection failed");
+    }
   };
+
+  /* ================= STATES ================= */
 
   if (loading) return <p style={{ padding: 20 }}>Loading...</p>;
   if (!church) return <p style={{ padding: 20 }}>Application not found</p>;
+
+  /* ================= UI ================= */
 
   return (
     <div className="dashboard details-page">

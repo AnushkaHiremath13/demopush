@@ -1,6 +1,7 @@
 import "../../styles/dashboard.css";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { api } from "../../api/api";
 
 /* ================= DATE + AGING UTILITY ================= */
 
@@ -21,7 +22,6 @@ function formatDateWithAging(dateString) {
 }
 
 export default function Dashboard() {
-  const token = localStorage.getItem("token");
   const navigate = useNavigate();
 
   /* ================= STATE ================= */
@@ -38,44 +38,26 @@ export default function Dashboard() {
   /* ================= DASHBOARD STATS ================= */
 
   const loadDashboardStats = async () => {
-    try {
-      const res = await fetch("/api/platform/dashboard", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+    const data = await api("/platform/dashboard");
 
-      const data = await res.json();
-
+    if (data?.success) {
       setStats({
         totalChurches: data.totalchurches || 0,
         activeChurches: data.activechurches || 0,
         totalUsers: data.totalusers || 0,
       });
-    } catch (err) {
-      console.error("Dashboard stats error:", err);
     }
   };
 
   /* ================= PENDING CHURCHES ================= */
 
   const loadPending = async () => {
-    try {
-      const res = await fetch("/api/platform/church-applicants", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+    const data = await api("/platform/church-applicants");
 
-      const data = await res.json();
-
-      if (data.success) {
-        setPendingChurches(data.applications);
-      } else {
-        setPendingChurches([]);
-      }
-    } catch (err) {
-      console.error("Pending churches error:", err);
+    if (data?.success) {
+      setPendingChurches(data.applications || []);
+    } else {
+      setPendingChurches([]);
     }
   };
 

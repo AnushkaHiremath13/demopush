@@ -1,43 +1,49 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "../../styles/dashboard.css";
+import { api } from "../../api/api";
 
 export default function ApprovedChurchDetails() {
   const { churchId } = useParams();
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
 
   const [church, setChurch] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  /* ================= LOAD CHURCH ================= */
+
   useEffect(() => {
-    loadChurch();
-    // eslint-disable-next-line
-  }, []);
+    const loadChurch = async () => {
+      try {
+          const data = await api(`/platform/churches/${churchId}`);
 
-  const loadChurch = async () => {
-    try {
-      const res = await fetch(
-        `/api/platform/church/${churchId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        if (data?.church) {
+          setChurch(data.church);
+        } else {
+          setChurch(null);
         }
-      );
+      } catch (err) {
+        console.error("Approved church fetch error:", err);
+        setChurch(null);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      const data = await res.json();
-      setChurch(data.church);
-    } catch (err) {
-      console.error("Approved church fetch error:", err);
-      setChurch(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+    loadChurch();
+  }, [churchId]);
 
-  if (loading) return <p style={{ padding: 20 }}>Loading...</p>;
-  if (!church) return <p>Church not found</p>;
+  /* ================= STATES ================= */
+
+  if (loading) {
+    return <p style={{ padding: 20 }}>Loading...</p>;
+  }
+
+  if (!church) {
+    return <p style={{ padding: 20 }}>Church not found</p>;
+  }
+
+  /* ================= UI ================= */
 
   return (
     <div className="dashboard details-page">

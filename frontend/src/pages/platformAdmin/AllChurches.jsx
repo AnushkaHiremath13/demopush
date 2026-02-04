@@ -1,26 +1,26 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/dashboard.css";
+import { api } from "../../api/api";
 
 export default function AllChurches() {
   const [churches, setChurches] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
 
   /* ================= FETCH CHURCHES ================= */
+
   useEffect(() => {
     const loadChurches = async () => {
       try {
-        const res = await fetch("/api/platform/church/all", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const data = await api("/platform/churches");
 
-        const data = await res.json();
-        setChurches(data.churches || []);
+        if (data?.success) {
+          setChurches(data.churches || []);
+        } else {
+          setChurches([]);
+        }
       } catch (err) {
         console.error(err);
         alert("Failed to load churches");
@@ -30,41 +30,47 @@ export default function AllChurches() {
     };
 
     loadChurches();
-  }, [token]);
+  }, []);
 
   /* ================= STATUS ACTION ================= */
+
   const updateStatus = async (cid, action) => {
-    const endpoint =
-      action === "SUSPEND"
-        ? `/api/platform/church/${cid}/suspend`
-        : `/api/platform/church/${cid}/activate`;
+    try {
+      const endpoint =
+        action === "SUSPEND"
+          ? `/platform/churches/${cid}/suspend`
+          : `/platform/churches/${cid}/activate`;
 
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+      const data = await api(endpoint, {
+        method: "PATCH",
+      });
 
-    if (res.ok) {
-      setChurches((prev) =>
-        prev.map((c) =>
-          c.cid === cid
-            ? {
-                ...c,
-                cstatus: action === "SUSPEND" ? "SUSPENDED" : "ACTIVE",
-              }
-            : c
-        )
-      );
-    } else {
-      alert("Action failed");
+      if (data?.success) {
+        setChurches((prev) =>
+          prev.map((c) =>
+            c.cid === cid
+              ? {
+                  ...c,
+                  cstatus: action === "SUSPEND" ? "SUSPENDED" : "ACTIVE",
+                }
+              : c
+          )
+        );
+      } else {
+        alert("Action failed");
+      }
+    } catch (err) {
+      alert(err.message || "Action failed");
     }
   };
+
+  /* ================= LOADING ================= */
 
   if (loading) {
     return <p style={{ padding: 20 }}>Loading churches...</p>;
   }
+
+  /* ================= UI ================= */
 
   return (
     <div className="dashboard">
@@ -115,18 +121,14 @@ export default function AllChurches() {
                   {church.cstatus === "ACTIVE" ? (
                     <button
                       className="reject-btn"
-                      onClick={() =>
-                        updateStatus(church.cid, "SUSPEND")
-                      }
+                      onClick={() => updateStatus(church.cid, "SUSPEND")}
                     >
                       Suspend
                     </button>
                   ) : (
                     <button
                       className="approve-btn"
-                      onClick={() =>
-                        updateStatus(church.cid, "ACTIVATE")
-                      }
+                      onClick={() => updateStatus(church.cid, "ACTIVATE")}
                     >
                       Activate
                     </button>

@@ -12,42 +12,57 @@ export default function Login() {
     upassword: "",
   });
 
- 
-  // 2️⃣ Handle input change
+  const [loading, setLoading] = useState(false);
+
+  /* ================= INPUT CHANGE ================= */
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [e.target.name]: e.target.value.trim(),
     });
   };
 
-  // 3️⃣ Handle login
- const handleLogin = async () => {
-  try {
-    const res = await api("/auth/login", {
-      method: "POST",
-      body: JSON.stringify(formData),
-    });
+  /* ================= LOGIN ================= */
 
-    // store token + role info
-    localStorage.setItem("token", res.token);
-    localStorage.setItem("userType", res.userType);
+  const handleLogin = async () => {
+    if (!formData.uemail || !formData.upassword) {
+      alert("Email and password are required");
+      return;
+    }
 
-    // ✅ backend-controlled redirect
-    navigate(res.redirectTo);
+    try {
+      setLoading(true);
 
-  } catch (err) {
-    alert(err.message);
-  }
-};
+      const res = await api("/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
 
+      // store token + role
+      localStorage.setItem("token", res.token);
+      localStorage.setItem("userType", res.userType);
 
-  /* 🔐 GOOGLE LOGIN (placeholder for now) */
+      // backend-controlled redirect
+      navigate(res.redirectTo);
+
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ================= GOOGLE LOGIN (FUTURE) ================= */
+
   const handleGoogleLogin = () => {
     alert("Google login will be enabled soon");
-    // Later:
-    // window.location.href = "http://localhost:5000/api/auth/google";
   };
+
+  /* ================= UI ================= */
 
   return (
     <div className="auth-wrapper login-layout">
@@ -73,8 +88,12 @@ export default function Login() {
 
           <p className="forgot">Forgot Password!</p>
 
-          <button className="primary-btn" onClick={handleLogin}>
-            Login
+          <button
+            className="primary-btn"
+            onClick={handleLogin}
+            disabled={loading}
+          >
+            {loading ? "Logging in..." : "Login"}
           </button>
 
           <div className="or">Or</div>

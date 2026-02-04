@@ -139,29 +139,63 @@ export default function Register() {
     uconfirmpassword: "",
   });
 
+  const [loading, setLoading] = useState(false);
+
+  /* ================= HANDLE CHANGE ================= */
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [e.target.name]: e.target.value.trim(),
     });
   };
 
+  /* ================= REGISTER ================= */
+
   const handleRegister = async () => {
+    const {
+      uname,
+      uemail,
+      upassword,
+      uconfirmpassword,
+    } = formData;
+
+    // 🔒 basic validation
+    if (!uname || !uemail || !upassword || !uconfirmpassword) {
+      alert("Please fill all required fields");
+      return;
+    }
+
+    if (upassword !== uconfirmpassword) {
+      alert("Passwords do not match");
+      return;
+    }
+
     try {
+      setLoading(true);
+
       const res = await api("/auth/register", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(formData),
       });
 
-      alert(res.message);
+      alert(res.message || "Registration successful");
       navigate("/");
+
     } catch (err) {
       alert(err.message || "Registration failed");
+    } finally {
+      setLoading(false);
     }
   };
 
+  /* ================= UI ================= */
+
   return (
-    <div style={{ padding: 40 }}>
+    <div style={{ padding: 40, maxWidth: 420 }}>
       <h2>Register</h2>
 
       <input
@@ -193,7 +227,7 @@ export default function Register() {
 
       <input
         type="text"
-        placeholder="Church Code"
+        placeholder="Church Code (optional)"
         name="ccode"
         value={formData.ccode}
         onChange={handleChange}
@@ -218,9 +252,11 @@ export default function Register() {
       />
       <br /><br />
 
-      <button onClick={handleRegister}>Register</button>
+      <button onClick={handleRegister} disabled={loading}>
+        {loading ? "Registering..." : "Register"}
+      </button>
 
-      <p>
+      <p style={{ marginTop: 16 }}>
         Already have an account?{" "}
         <span
           style={{ color: "blue", cursor: "pointer" }}

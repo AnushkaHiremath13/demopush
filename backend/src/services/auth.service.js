@@ -1,76 +1,89 @@
-const pool = require("../config/db");
+// src/services/auth.service.js
+
+const prisma = require("../config/prisma");
 const { hashPassword, comparePassword } = require("../utils/password");
 const { generateToken } = require("../utils/token");
 const { v7: uuidv7 } = require("uuid");
 
-/* ================= REGISTER USER ================= */
+/* ============================================================
+   REGISTER USER
+============================================================ */
 
 async function registerUser(data) {
   const { uname, uemail, upassword, uphone, ccode } = data;
 
-  // 1. Check email existence
-  const emailCheck = await pool.query(
-    "SELECT 1 FROM tbluser1 WHERE uemail = $1",
-    [uemail]
-  );
+  /* 1️⃣ Check if email already exists */
+  const existingUser = await prisma.tbluser1.findUnique({
+    where: { uemail },
+    select: { uid: true },
+  });
 
-  if (emailCheck.rowCount > 0) {
+  if (existingUser) {
     throw new Error("Email already registered");
   }
 
-  // 2. Hash password
+  /* 2️⃣ Hash password */
   const passwordHash = await hashPassword(upassword);
 
-  // 3. Generate UUID
+  /* 3️⃣ Generate UUID */
   const uid = uuidv7();
 
-  // 4. Insert user (default follower)
-  await pool.query(
-    `
-    INSERT INTO tbluser1 (
-      uid, uname, uemail, upassword, uphone, ccode,
-      uisplatform, uisemployee, uisfollower
-    )
-    VALUES ($1, $2, $3, $4, $5, $6, false, false, true)
-    `,
-    [uid, uname, uemail, passwordHash, uphone || null, ccode || null]
-  );
+  /* 4️⃣ Insert user (default follower) */
+  await prisma.tbluser1.create({
+    data: {
+      uid,
+      uname,
+      uemail,
+      upassword: passwordHash,
+      uphone: uphone || null,
+      ccode: ccode || null,
 
-  return { uid, uemail };
+      uisplatform: false,
+      uisemployee: false,
+      uisfollower: true,
+    },
+  });
+
+  return {
+    uid,
+    uemail,
+  };
 }
 
-/* ================= LOGIN USER ================= */
-
+/* ============================================================
+   LOGIN USER
+============================================================ */
 
 async function loginUser({ uemail, upassword }) {
-  /* ================= FIND USER ================= */
+  /* 1️⃣ Find active user */
+  const user = await prisma.tbluser1.findFirst({
+    where: {
+      uemail,
+      ustatus: "ACTIVE",
+    },
+    select: {
+      uid: true,
+      uemail: true,
+      upassword: true,
+      uisplatform: true,
+      uisemployee: true,
+    },
+  });
 
-  const userResult = await pool.query(
-    `
-    SELECT uid, uemail, upassword, uisplatform
-    FROM tbluser1
-    WHERE uemail = $1
-      AND ustatus = 'ACTIVE'
-    `,
-    [uemail]
-  );
-
-  if (userResult.rowCount === 0) {
+  if (!user) {
     throw new Error("Invalid email or password");
   }
 
-  const user = userResult.rows[0];
-
-  /* ================= VERIFY PASSWORD ================= */
-
+  /* 2️⃣ Verify password */
   const isMatch = await comparePassword(upassword, user.upassword);
   if (!isMatch) {
     throw new Error("Invalid email or password");
   }
 
-  /* ================= PLATFORM ADMIN ================= */
-
-  if (user.uisplatform) {
+  /* ============================================================
+     PLATFORM ADMIN LOGIN
+  ============================================================ */
+  if (user.uisplatform === true) {
     const token = generateToken({
       uid: user.uid,
       userType: "PLATFORM",
@@ -83,76 +96,45 @@ async function loginUser({ uemail, upassword }) {
     };
   }
 
-  /* ================= CHURCH AUTHORITY ================= */
-
- async function loginUser({ uemail, upassword }) {
-  const result = await pool.query(
-    "SELECT * FROM tbluser1 WHERE uemail = $1",
-    [uemail]
-  );
-
-  if (result.rowCount === 0) {
-    throw new Error("Invalid email or password");
-  }
-
-  const user = result.rows[0];
-
-  const isMatch = await bcrypt.compare(upassword, user.upassword);
-  if (!isMatch) {
-    throw new Error("Invalid email or password");
-  }
-
-  /* 🔑 DETERMINE ROLE */
-  let userType = "FOLLOWER";
-  let redirectTo = "/home";
-
-  if (user.uisplatform === true) {
-    userType = "PLATFORM";
-    redirectTo = "/platform/dashboard";
-  } else if (user.uisemployee === true) {
-    userType = "CHURCH_AUTHORITY";
-    redirectTo = "/church/dashboard";
-  }
-
-  /* 🔐 SIGN JWT (THIS FIXES 403 ISSUE) */
-  const token = jwt.sign(
-    {
+  /* ============================================================
+     CHURCH AUTHORITY LOGIN
+  ============================================================ */
+  if (user.uisemployee === true) {
+    const token = generateToken({
       uid: user.uid,
-      userType, // ✅ CRITICAL
+      userType: "CHURCH_AUTHORITY",
+    });
+
+    return {
+      token,
+      userType: "CHURCH_AUTHORITY",
+      redirectTo: "/church/dashboard",
+    };
+  }
+
+  /* ============================================================
+     FOLLOWER APPROVAL CHECK
+  ============================================================ */
+  const churchLink = await prisma.tblchurch_user.findFirst({
+    where: {
+      uid: user.uid,
     },
-    process.env.JWT_SECRET,
-    { expiresIn: "1d" }
-  );
+    select: {
+      approvalstatus: true,
+    },
+  });
 
-  return {
-    token,
-    userType,
-    redirectTo,
-  };
-}
-
-
-  /* ================= FOLLOWER APPROVAL CHECK ================= */
-
-  const followerCheck = await pool.query(
-    `
-    SELECT approvalstatus
-    FROM tblchurch_user
-    WHERE uid = $1
-    `,
-    [user.uid]
-  );
-
-  if (followerCheck.rowCount === 0) {
+  if (!churchLink) {
     throw new Error("User is not linked to any church");
   }
 
-  if (followerCheck.rows[0].approvalstatus !== "APPROVED") {
+  if (churchLink.approvalstatus !== "APPROVED") {
     throw new Error("Your account is pending approval by the church");
   }
 
-  /* ================= APPROVED FOLLOWER ================= */
-
+  /* ============================================================
+     APPROVED FOLLOWER LOGIN
+  ============================================================ */
   const token = generateToken({
     uid: user.uid,
     userType: "USER",
@@ -164,6 +146,10 @@ async function loginUser({ uemail, upassword }) {
     redirectTo: "/user",
   };
 }
+
+/* ============================================================
+   EXPORTS
+============================================================ */
 
 module.exports = {
   registerUser,

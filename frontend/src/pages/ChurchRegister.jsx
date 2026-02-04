@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const API_BASE = "https://localhost:5000/api";
+const API_BASE = "http://localhost:5000/api";
 
 export default function ChurchRegister() {
   const [formData, setFormData] = useState({
@@ -21,7 +21,6 @@ export default function ChurchRegister() {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // ✅ FORCE UPPERCASE ONLY FOR CHURCH CODE
     if (name === "ccode") {
       setFormData({ ...formData, ccode: value.toUpperCase() });
     } else {
@@ -34,19 +33,21 @@ export default function ChurchRegister() {
     setLoading(true);
 
     try {
-      const res = await fetch(
-        `${API_BASE}/platform/church-applicants`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: JSON.stringify(formData),
-        }
-      );
+      const res = await fetch(`${API_BASE}/church/apply`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
 
-      const data = await res.json();
+      // ✅ SAFE JSON PARSING
+      let data = {};
+      try {
+        data = await res.json();
+      } catch {
+        data = {};
+      }
 
       if (!res.ok) {
         throw new Error(data.message || "Church registration failed");

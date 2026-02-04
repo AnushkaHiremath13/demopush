@@ -1,35 +1,54 @@
-const pool = require("../config/db");
+// src/controllers/DashboardController.js
+
+const prisma = require("../config/prisma");
+
+/* ============================================================
+   DASHBOARD STATS
+============================================================ */
 
 async function getDashboardStats(req, res) {
   try {
-    const totalChurches = await pool.query(
-      "SELECT COUNT(*) FROM tblchurch"
-    );
-
-    const activeChurches = await pool.query(
-      "SELECT COUNT(*) FROM tblchurch WHERE approvalstatus = 'APPROVED' AND cstatus = 'ACTIVE'"
-    );
-
-    const pendingChurches = await pool.query(
-      "SELECT COUNT(*) FROM tblchurch WHERE approvalstatus = 'PENDING'"
-    );
-
-    const totalUsers = await pool.query(
-      "SELECT COUNT(*) FROM tbluser1"
-    );
+    const [
+      totalChurches,
+      activeChurches,
+      pendingChurches,
+      totalUsers,
+    ] = await Promise.all([
+      prisma.tblchurch.count(),
+      prisma.tblchurch.count({
+        where: {
+          approvalstatus: "APPROVED",
+          cstatus: "ACTIVE",
+        },
+      }),
+      prisma.tblchurch.count({
+        where: {
+          approvalstatus: "PENDING",
+        },
+      }),
+      prisma.tbluser1.count(),
+    ]);
 
     return res.status(200).json({
-      totalchurches: Number(totalChurches.rows[0].count),
-      activechurches: Number(activeChurches.rows[0].count),
-      pendingchurches: Number(pendingChurches.rows[0].count),
-      totalusers: Number(totalUsers.rows[0].count),
+      success: true,
+      totalchurches: totalChurches,
+      activechurches: activeChurches,
+      pendingchurches: pendingChurches,
+      totalusers: totalUsers,
     });
   } catch (error) {
-    console.error("Dashboard stats error:", error);
+    console.error("Dashboard stats error:", error.message);
     return res.status(500).json({
+      success: false,
       message: "Failed to load dashboard stats",
     });
   }
 }
 
-module.exports = { getDashboardStats };
+/* ============================================================
+   EXPORTS
+============================================================ */
+
+module.exports = {
+  getDashboardStats,
+};

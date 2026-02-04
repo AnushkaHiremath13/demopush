@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/dashboard.css";
+import { api } from "../../api/api";
+
+
 
 /* ================= DATE + AGING ================= */
 function formatDateWithAging(dateString) {
@@ -23,23 +26,17 @@ export default function PendingChurches() {
   const [pendingChurches, setPendingChurches] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const token = localStorage.getItem("token");
   const navigate = useNavigate();
 
   /* ================= FETCH PENDING ================= */
+
   useEffect(() => {
     const loadPending = async () => {
       try {
-        const res = await fetch("/api/platform/church-applicants", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const data = await api("/platform/church-applicants");
 
-        const data = await res.json();
-
-        if (data.success) {
-          setPendingChurches(data.applications);
+        if (data?.success) {
+          setPendingChurches(data.applications || []);
         } else {
           setPendingChurches([]);
         }
@@ -52,7 +49,7 @@ export default function PendingChurches() {
     };
 
     loadPending();
-  }, [token]);
+  }, []);
 
   if (loading) {
     return <p style={{ padding: 20 }}>Loading pending churches…</p>;

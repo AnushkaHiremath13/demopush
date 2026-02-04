@@ -1,56 +1,53 @@
+// src/bootstrap/platformAdmin.bootstrap.js
+
 const bcrypt = require("bcrypt");
+const prisma = require("../config/prisma");
 
 async function createPlatformAdminIfNotExists() {
   try {
-    // ✅ Import pool lazily (KEY FIX)
-    const pool = require("../config/db");
+    /* ============================================================
+       CHECK IF PLATFORM ADMIN EXISTS
+    ============================================================ */
 
-    const check = await pool.query(
-      `SELECT uid FROM tbluser1 WHERE uisplatform = true LIMIT 1`
-    );
+    const existingAdmin = await prisma.tbluser1.findFirst({
+      where: {
+        uisplatform: true,
+      },
+      select: {
+        uid: true,
+      },
+    });
 
-    if (check.rowCount > 0) {
+    if (existingAdmin) {
       console.log("✅ Platform admin already exists");
       return;
     }
 
+    /* ============================================================
+       CREATE PLATFORM ADMIN
+    ============================================================ */
+
     const hashedPassword = await bcrypt.hash("Platform@powaha6", 10);
 
-    await pool.query(
-      `
-      INSERT INTO tbluser1 (
-        uid,
-        uname,
-        uemail,
-        upassword,
-        uisplatform,
-        uisemployee,
-        uisfollower,
-        uemailverified,
-        uphoneverified,
-        ustatus,
-        createdat
-      )
-      VALUES (
-        gen_random_uuid(),
-        'Platform Admin',
-        'admin@powaha.com',
-        $1,
-        true,
-        false,
-        false,
-        true,
-        true,
-        'ACTIVE',
-        NOW()
-      )
-      `,
-      [hashedPassword]
-    );
+    await prisma.tbluser1.create({
+      data: {
+        uname: "Platform Admin",
+        uemail: "admin@powaha.com",
+        upassword: hashedPassword,
 
-    //console.log("🚀 Platform admin bootstrapped successfully");
+        uisplatform: true,
+        uisemployee: false,
+        uisfollower: false,
+
+        uemailverified: true,
+        uphoneverified: true,
+        ustatus: "ACTIVE",
+      },
+    });
+
+    console.log("🚀 Platform admin bootstrapped successfully");
   } catch (error) {
-    console.error("❌ Bootstrap failed:", error.message);
+    console.error("❌ Platform admin bootstrap failed:", error.message);
   }
 }
 

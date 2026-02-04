@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -20,16 +20,36 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* AUTH */}
+        {/* ================= AUTH ================= */}
         <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* ✅ CHURCH REGISTRATION (PUBLIC) */}
+        {/* ================= PUBLIC ================= */}
         <Route path="/church-register" element={<ChurchRegister />} />
 
-        {/* PLATFORM ADMIN */}
+        {/* ================= ALIASES (SAFETY NET) ================= */}
+        {/* backend or old redirects */}
+        <Route
+          path="/platform/dashboard"
+          element={<Navigate to="/admin/dashboard" replace />}
+        />
+
+        <Route
+          path="/church/dashboard"
+          element={<Navigate to="/" replace />}
+        />
+
+        <Route
+          path="/user"
+          element={<Navigate to="/" replace />}
+        />
+
+        {/* ================= PLATFORM ADMIN ================= */}
         <Route path="/admin" element={<PlatformAdminLayout />}>
+          {/* default admin route */}
+          <Route index element={<Navigate to="dashboard" replace />} />
+
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="pending-churches" element={<PendingChurches />} />
           <Route path="all-churches" element={<AllChurches />} />
@@ -48,6 +68,9 @@ function App() {
             element={<ApprovedChurchDetails />}
           />
         </Route>
+
+        {/* ================= FALLBACK ================= */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

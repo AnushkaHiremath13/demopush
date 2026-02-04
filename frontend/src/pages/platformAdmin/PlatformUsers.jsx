@@ -1,40 +1,17 @@
 import { useEffect, useState } from "react";
 import "../../styles/dashboard.css";
+import { api } from "../../api/api";
 
 export default function PlatformUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const token = localStorage.getItem("token");
-
   /* ================= FETCH USERS ================= */
 
   useEffect(() => {
-    if (!token) {
-      console.error("No auth token found");
-      setLoading(false);
-      return;
-    }
-
-    async function loadUsers() {
+    const loadUsers = async () => {
       try {
-        const res = await fetch("/api/platform/users", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        let data;
-        try {
-          data = await res.json();
-        } catch {
-          throw new Error("Server did not return JSON");
-        }
-
-        if (!res.ok) {
-          throw new Error(data?.message || "Failed to fetch platform users");
-        }
-
+        const data = await api("/platform/users");
         setUsers(Array.isArray(data.users) ? data.users : []);
       } catch (err) {
         console.error("Platform users fetch error:", err.message);
@@ -42,42 +19,22 @@ export default function PlatformUsers() {
       } finally {
         setLoading(false);
       }
-    }
+    };
 
     loadUsers();
-  }, [token]);
+  }, []);
 
   /* ================= BLOCK / UNBLOCK ================= */
 
   const updateStatus = async (uid, action) => {
-    if (!token) return;
-
     try {
       const endpoint =
         action === "BLOCK"
-          ? `/api/platform/user/${uid}/block`
-          : `/api/platform/user/${uid}/unblock`;
+          ? `/platform/users/${uid}/block`
+          : `/platform/users/${uid}/unblock`;
 
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await api(endpoint, { method: "PATCH" }); // ✅ PATCH (not POST)
 
-      let data;
-      try {
-        data = await res.json();
-      } catch {
-        throw new Error("Server did not return JSON");
-      }
-
-      if (!res.ok) {
-        throw new Error(data?.message || "Status update failed");
-      }
-
-      // Update UI instantly
       setUsers((prev) =>
         prev.map((u) =>
           u.uid === uid
@@ -99,13 +56,9 @@ export default function PlatformUsers() {
     return "FOLLOWER";
   };
 
-  /* ================= LOADING ================= */
-
   if (loading) {
     return <p style={{ padding: "20px" }}>Loading platform users...</p>;
   }
-
-  /* ================= UI ================= */
 
   return (
     <div className="dashboard">

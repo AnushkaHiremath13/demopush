@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model tblchurch {
+  cid               String           @id @default(uuid()) @db.Uuid   // ✅ FIX 1
+  ccode             String           @unique @db.VarChar(50)
+  cname             String           @db.VarChar(150)
+  cemail            String?          @db.VarChar(255)                 // ✅ FIX 2
+  caddress          String?
+  ccity             String?          @db.VarChar(100)
+  cstate            String?          @db.VarChar(100)
+  ccountry          String?          @db.VarChar(100)
+  cpincode          String?          @db.VarChar(20)
+  cdenomination     String?          @db.VarChar(100)
+  clocation         String?
+  ctimezone         String?          @db.VarChar(50)
+  csubscriptionplan String?          @db.VarChar(50)
+  cstatus           String?          @default("ACTIVE") @db.VarChar(20)
+  approvalstatus    String?          @default("APPROVED") @db.VarChar(20)
+  approvedby        String?          @db.Uuid
+  approvedat        DateTime?        @db.Timestamp(6)
+  createdat         DateTime?        @default(now()) @db.Timestamp(6)
+  createdby         String?          @db.Uuid
+  tblchurch_user    tblchurch_user[]
+}
+
+
+model tblchurch_applicants {
+  application_id     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ccode              String    @unique(map: "idx_tblchurch_applicants_ccode") @db.Char(8)
+  cname              String    @db.VarChar(150)
+  caddress           String?
+  ccity              String?   @db.VarChar(100)
+  cstate             String?   @db.VarChar(100)
+  ccountry           String?   @db.VarChar(100)
+  cpincode           String?   @db.VarChar(20)
+  cemail             String?   @db.VarChar(25)
+  cdenomination      String?   @db.VarChar(100)
+  clocation          String?
+  ctimezone          String?   @db.VarChar(50)
+  approved_at        DateTime? @db.Timestamp(6)
+  rejected_at        DateTime? @db.Timestamp(6)
+  application_status String?   @default("PENDING") @db.VarChar(20)
+  applied_on         DateTime? @default(dbgenerated("CURRENT_DATE")) @db.Date
+
+  @@index([ccity], map: "idx_tblchurch_applicants_city")
+  @@index([cname], map: "idx_tblchurch_applicants_cname")
+  @@index([cstate], map: "idx_tblchurch_applicants_state")
+  @@index([application_status], map: "idx_tblchurch_applicants_status")
+  @@index([application_status, applied_on], map: "idx_tblchurch_applicants_status_appliedon")
+}
+
+model tblchurch_user {
+  uid            String    @db.Uuid
+  cid            String    @db.Uuid
+  approvalstatus String?   @default("PENDING") @db.VarChar(20)
+  status         String?   @default("ACTIVE") @db.VarChar(20)
+  createdat      DateTime? @default(now()) @db.Timestamp(6)
+  createdby      String?   @db.Uuid
+  tblchurch      tblchurch @relation(fields: [cid], references: [cid], onDelete: Cascade, onUpdate: NoAction, map: "fk_church_user_church")
+  tbluser1       tbluser1  @relation(fields: [uid], references: [uid], onDelete: Cascade, onUpdate: NoAction, map: "fk_church_user_user")
+
+  @@id([uid, cid], map: "pk_church_user")
+  @@index([cid], map: "idx_church_user_cid")
+  @@index([uid], map: "idx_church_user_uid")
+}
+
+model tbluser1 {
+  uid            String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  uname          String           @db.VarChar(150)
+  uemail         String           @unique(map: "idx_tbluser1_uemail") @db.VarChar(255)
+  uphone         String?          @db.VarChar(20)
+  upassword      String
+  ccode          String?          @db.VarChar(50)
+  uisplatform    Boolean          @default(false)
+  uisemployee    Boolean          @default(false)
+  uisfollower    Boolean          @default(true)
+  ustatus        String           @default("ACTIVE") @db.VarChar(20)
+  uemailverified Boolean          @default(false)
+  uphoneverified Boolean          @default(false)
+  createdat      DateTime         @default(now()) @db.Timestamp(6)
+  createdby      String?          @db.Uuid
+  tblchurch_user tblchurch_user[]
+  tbluser2       tbluser2?
+
+  @@index([ccode], map: "idx_tbluser1_ccode")
+  @@index([ccode, uisemployee, uisfollower], map: "idx_tbluser1_ccode_role")
+}
+
+model tbluser2 {
+  uid           String    @id @db.Uuid
+  uname         String    @db.VarChar(150)
+  uemail        String    @db.VarChar(255)
+  uaddress      String?
+  ucity         String?   @db.VarChar(100)
+  ustate        String?   @db.VarChar(100)
+  ucountry      String?   @db.VarChar(100)
+  upincode      String?   @db.VarChar(20)
+  uprofileimage String?
+  ugender       String?   @db.VarChar(20)
+  udob          DateTime? @db.Date
+  createdat     DateTime  @default(now()) @db.Timestamp(6)
+  createdby     String?   @db.Uuid
+  tbluser1      tbluser1  @relation(fields: [uid], references: [uid], onDelete: Cascade, onUpdate: NoAction, map: "fk_tbluser2_user")
+}
+
+model employee_assignments {
+  eid        Int      @id @default(autoincrement())
+  email      String
+  phone      String
+  ccode      String
+  status     String   @default("INVITED")
+  createdat  DateTime @default(now())
+
+  @@unique([email, ccode])
+  @@map("tblemployee_assignments")
+}

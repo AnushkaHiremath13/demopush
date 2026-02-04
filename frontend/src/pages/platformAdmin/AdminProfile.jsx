@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import "../../styles/dashboard.css";
 import OtpModal from "../../components/modals/OtpModal";
 import ReAuthModal from "../../components/modals/ReAuthModal";
+import { api } from "../../api/api"; // ✅ IMPORTANT
 
 export default function AdminProfile() {
   const [editMode, setEditMode] = useState(false);
@@ -12,14 +13,17 @@ export default function AdminProfile() {
   /* ================= FETCH PROFILE ================= */
 
   useEffect(() => {
-    fetch("/api/user/me", {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    })
-      .then((res) => res.json())
-      .then((data) => setProfile(data))
-      .catch(() => alert("Failed to load profile"));
+    const loadProfile = async () => {
+      try {
+        const data = await api("/user/me"); // ✅ consistent API usage
+        setProfile(data);
+      } catch (err) {
+        console.error("Admin profile load error:", err.message);
+        alert("Failed to load profile");
+      }
+    };
+
+    loadProfile();
   }, []);
 
   if (!profile) {

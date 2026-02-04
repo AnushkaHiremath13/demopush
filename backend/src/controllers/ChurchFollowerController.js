@@ -1,10 +1,14 @@
+// src/controllers/ChurchFollowerController.js
+
 const {
   getPendingFollowers,
   approveFollower,
   rejectFollower,
 } = require("../services/ChurchFollowerService");
 
-/* ================= GET PENDING FOLLOWERS ================= */
+/* ============================================================
+   GET PENDING FOLLOWERS
+============================================================ */
 
 async function pending(req, res) {
   try {
@@ -12,13 +16,21 @@ async function pending(req, res) {
       handlerUid: req.user.uid,
     });
 
-    return res.status(200).json({ followers });
+    return res.status(200).json({
+      success: true,
+      followers,
+    });
   } catch (error) {
-    return res.status(403).json({ message: error.message });
+    return res.status(403).json({
+      success: false,
+      message: error.message,
+    });
   }
 }
 
-/* ================= APPROVE FOLLOWER ================= */
+/* ============================================================
+   APPROVE FOLLOWER
+============================================================ */
 
 async function approve(req, res) {
   try {
@@ -30,15 +42,21 @@ async function approve(req, res) {
     });
 
     return res.status(200).json({
+      success: true,
       message: "Follower approved successfully",
-      result,
+      data: result,
     });
   } catch (error) {
-    return res.status(403).json({ message: error.message });
+    return res.status(403).json({
+      success: false,
+      message: error.message,
+    });
   }
 }
 
-/* ================= REJECT FOLLOWER ================= */
+/* ============================================================
+   REJECT FOLLOWER
+============================================================ */
 
 async function reject(req, res) {
   try {
@@ -50,11 +68,15 @@ async function reject(req, res) {
     });
 
     return res.status(200).json({
+      success: true,
       message: "Follower rejected successfully",
-      result,
+      data: result,
     });
   } catch (error) {
-    return res.status(403).json({ message: error.message });
+    return res.status(403).json({
+      success: false,
+      message: error.message,
+    });
   }
 }
 

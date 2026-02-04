@@ -1,109 +1,105 @@
-const pool = require("../config/db");
+// src/services/churchApplicant.service.js
 
-/* ================= FETCH PENDING APPLICANTS ================= */
+const prisma = require("../config/prisma");
 
-exports.fetchApplicants = async () => {
-  const { rows } = await pool.query(`
-    SELECT *
-    FROM tblchurch_applicants
-    WHERE application_status = 'PENDING'
-    ORDER BY applied_on ASC
-  `);
+/* ============================================================
+   FETCH PENDING APPLICANTS
+============================================================ */
 
-  return rows;
-};
+async function fetchApplicants() {
+  const applicants = await prisma.tblchurch_applicants.findMany({
+    where: {
+      application_status: "PENDING",
+    },
+    orderBy: {
+      applied_on: "asc",
+    },
+  });
 
-/* ================= APPROVE APPLICANT ================= */
+  return applicants;
+}
 
-exports.approveApplicant = async (applicationId, approvedBy) => {
-  const client = await pool.connect();
+/* ============================================================
+   APPROVE APPLICANT
+============================================================ */
 
-  try {
-    await client.query("BEGIN");
+async function approveApplicant(applicationId, approvedBy) {
+  return await prisma.$transaction(async (tx) => {
+    /* 1️⃣ Fetch applicant (must be pending) */
+    const applicant = await tx.tblchurch_applicants.findFirst({
+      where: {
+        application_id: applicationId,
+        application_status: "PENDING",
+      },
+    });
 
-    // 1. Fetch applicant
-    const { rows } = await client.query(
-      `
-      SELECT *
-      FROM tblchurch_applicants
-      WHERE application_id = $1
-      AND application_status = 'PENDING'
-      `,
-      [applicationId]
-    );
-
-    if (!rows.length) {
+    if (!applicant) {
       throw new Error("Applicant not found or already processed");
     }
 
-    const app = rows[0];
+    /* 2️⃣ Insert into tblchurch */
+    await tx.tblchurch.create({
+      data: {
+        ccode: applicant.ccode,
+        cname: applicant.cname,
+        caddress: applicant.caddress,
+        ccity: applicant.ccity,
+        cstate: applicant.cstate,
+        ccountry: applicant.ccountry,
+        cpincode: applicant.cpincode,
+        cdenomination: applicant.cdenomination,
+        clocation: applicant.clocation,
+        ctimezone: applicant.ctimezone,
+        approvedby: approvedBy,
+      },
+    });
 
-    // 2. Insert into tblchurch (cid auto-generated)
-    await client.query(
-      `
-      INSERT INTO tblchurch (
-        ccode,
-        cname,
-        caddress,
-        ccity,
-        cstate,
-        ccountry,
-        cpincode,
-        cdenomination,
-        clocation,
-        ctimezone,
-        approvedby
-      )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-      `,
-      [
-        app.ccode,
-        app.cname,
-        app.caddress,
-        app.ccity,
-        app.cstate,
-        app.ccountry,
-        app.cpincode,
-        app.cdenomination,
-        app.clocation,
-        app.ctimezone,
-        approvedBy,
-      ]
-    );
+    /* 3️⃣ Update applicant status */
+    await tx.tblchurch_applicants.update({
+      where: {
+        application_id: applicationId,
+      },
+      data: {
+        application_status: "APPROVED",
+      },
+    });
 
-    // 3. Update applicant status
-    await client.query(
-      `
-      UPDATE tblchurch_applicants
-      SET application_status = 'APPROVED'
-      WHERE application_id = $1
-      `,
-      [applicationId]
-    );
+    return {
+      message: "Church application approved successfully",
+    };
+  });
+}
 
-    await client.query("COMMIT");
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
-};
+/* ============================================================
+   REJECT APPLICANT
+============================================================ */
 
-/* ================= REJECT APPLICANT ================= */
+async function rejectApplicant(applicationId) {
+  const result = await prisma.tblchurch_applicants.updateMany({
+    where: {
+      application_id: applicationId,
+      application_status: "PENDING",
+    },
+    data: {
+      application_status: "REJECTED",
+    },
+  });
 
-exports.rejectApplicant = async (applicationId) => {
-  const { rowCount } = await pool.query(
-    `
-    UPDATE tblchurch_applicants
-    SET application_status = 'REJECTED'
-    WHERE application_id = $1
-    AND application_status = 'PENDING'
-    `,
-    [applicationId]
-  );
-
-  if (!rowCount) {
+  if (result.count === 0) {
     throw new Error("Applicant not found or already processed");
   }
+
+  return {
+    message: "Church application rejected successfully",
+  };
+}
+
+/* ============================================================
+   EXPORTS
+============================================================ */
+
+module.exports = {
+  fetchApplicants,
+  approveApplicant,
+  rejectApplicant,
 };

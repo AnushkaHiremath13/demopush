@@ -1,3 +1,5 @@
+// src/routes/auth.routes.js
+
 const express = require("express");
 const router = express.Router();
 
@@ -7,15 +9,14 @@ const {
   logout,
 } = require("../controllers/auth.controller");
 
-// ✅ IMPORTANT: destructure the middleware
 const { authenticateUser } = require("../middleware/auth");
 
-/* ================= AUTH ROUTES ================= */
+/* ============================================================
+   AUTH ROUTES
+============================================================ */
 
 router.post("/register", register);
 router.post("/login", login);
-
-// 🔐 Logout (protected)
 router.post("/logout", authenticateUser, logout);
 
 module.exports = router;

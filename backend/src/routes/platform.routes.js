@@ -1,76 +1,170 @@
+// src/routes/platform.routes.js
+
 const express = require("express");
 const router = express.Router();
 
+
 const { authenticatePlatform } = require("../middleware/auth");
 
-/* ================= DASHBOARD ================= */
+/* ============================================================
+   DASHBOARD
+============================================================ */
+
 const { getDashboardStats } = require("../controllers/DashboardController");
 
-/* ================= SECURITY LOGS ================= */
+router.get("/dashboard", authenticatePlatform, getDashboardStats);
+
+/* ============================================================
+   SECURITY LOGS
+============================================================ */
+
 const { getSecurityLogs } = require("../controllers/SecurityLogController");
 
-/* ================= CHURCH APPLICANTS ================= */
+router.get("/security-logs", authenticatePlatform, getSecurityLogs);
+
+/* ============================================================
+   CHURCH APPLICANTS
+============================================================ */
+
 const {
   getChurchApplicants,
   getChurchApplicantById,
-  createChurchApplicant,
   approveChurchApplicant,
   rejectChurchApplicant,
 } = require("../controllers/ChurchApplicantController");
 
-/* ================= CHURCH APPLICANTS ROUTES ================= */
-router.post("/church-applicants", authenticatePlatform, createChurchApplicant);
-router.get("/church-applicants", authenticatePlatform, getChurchApplicants);
+
+
+router.get(
+  "/church-applicants",
+  authenticatePlatform,
+  getChurchApplicants
+);
+
 router.get(
   "/church-applicants/:applicationId",
   authenticatePlatform,
   getChurchApplicantById
 );
-router.post(
+
+router.patch(
   "/church-applicants/:applicationId/approve",
   authenticatePlatform,
   approveChurchApplicant
 );
-router.post(
+
+router.patch(
   "/church-applicants/:applicationId/reject",
   authenticatePlatform,
   rejectChurchApplicant
 );
 
-/* ================= CHURCHES ================= */
+/* ============================================================
+   CHURCHES
+============================================================ */
+
 const {
   getAllChurches,
+  getChurchById,
   assignAuthority,
   suspend,
   activate,
-  getChurchById,
 } = require("../controllers/PlatformChurchController");
 
-router.get("/church/all", authenticatePlatform, getAllChurches);
-router.get("/church/:churchId", authenticatePlatform, getChurchById);
+// ✅ LIST ALL APPROVED CHURCHES
+router.get(
+  "/churches",
+  authenticatePlatform,
+  getAllChurches
+);
+
+// ✅ GET CHURCH BY ID (plural – existing)
+router.get(
+  "/churches/:cid",
+  authenticatePlatform,
+  getChurchById
+);
+
+// ✅ GET CHURCH BY ID (singular – for frontend compatibility)
+router.get(
+  "/church/:cid",
+  authenticatePlatform,
+  getChurchById
+);
+
+// ✅ SUSPEND CHURCH
+router.patch(
+  "/churches/:cid/suspend",
+  authenticatePlatform,
+  suspend
+);
+
+// ✅ ACTIVATE CHURCH
+router.patch(
+  "/churches/:cid/activate",
+  authenticatePlatform,
+  activate
+);
+
+// ✅ ASSIGN AUTHORITY
 router.post(
-  "/church/:cid/assign-authority",
+  "/churches/:cid/assign-authority",
   authenticatePlatform,
   assignAuthority
 );
-router.post("/church/:cid/suspend", authenticatePlatform, suspend);
-router.post("/church/:cid/activate", authenticatePlatform, activate);
 
-/* ================= USERS ================= */
+/* ============================================================
+   USERS
+============================================================ */
+
 const {
   getUsers,
   block,
   unblock,
 } = require("../controllers/PlatformUserController");
 
-router.get("/users", authenticatePlatform, getUsers);
-router.post("/user/:uid/block", authenticatePlatform, block);
-router.post("/user/:uid/unblock", authenticatePlatform, unblock);
+router.get(
+  "/users",
+  authenticatePlatform,
+  getUsers
+);
 
-/* ================= DASHBOARD ================= */
-router.get("/dashboard", authenticatePlatform, getDashboardStats);
+router.patch(
+  "/users/:uid/block",
+  authenticatePlatform,
+  block
+);
 
-/* ================= SECURITY LOGS ================= */
-router.get("/security-logs", authenticatePlatform, getSecurityLogs);
+router.patch(
+  "/users/:uid/unblock",
+  authenticatePlatform,
+  unblock
+);
+/* ============================================================
+   BULK EMPLOYEE ASSIGNMENTS
+============================================================ */
+
+const upload = require("../middleware/UploadMiddleware");
+const {
+  getEmployeeAssignments,
+  bulkAssignEmployees,
+} = require("../controllers/EmployeeAssignmentController");
+
+router.post(
+  "/employee-assignments/bulk",
+  authenticatePlatform,
+  upload.single("file"),
+  bulkAssignEmployees
+);
+
+router.get(
+  "/employee-assignments",
+  authenticatePlatform,
+  getEmployeeAssignments
+);
+
+/* ============================================================
+   EXPORTS
+============================================================ */
 
 module.exports = router;

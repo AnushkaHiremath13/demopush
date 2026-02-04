@@ -1,59 +1,67 @@
-const pool = require("../config/db");
+// src/services/PlatformUserService.js
 
-/* ================= GET ALL USERS ================= */
+const prisma = require("../config/prisma");
+
+/* ============================================================
+   GET ALL PLATFORM USERS
+============================================================ */
 
 async function getAllPlatformUsers() {
-  const result = await pool.query(`
-    SELECT
-      uid,
-      uname,
-      uemail,
-      uisplatform,
-      uisemployee,
-      ustatus,
-      createdat
-    FROM tbluser1
-    ORDER BY createdat DESC
-  `);
+  const users = await prisma.tbluser1.findMany({
+    select: {
+      uid: true,
+      uname: true,
+      uemail: true,
+      uisplatform: true,
+      uisemployee: true,
+      ustatus: true,
+      createdat: true,
+    },
+    orderBy: {
+      createdat: "desc",
+    },
+  });
 
-  return result.rows;
+  return users;
 }
 
-/* ================= BLOCK USER ================= */
+/* ============================================================
+   BLOCK USER
+============================================================ */
 
 async function blockUser({ uid }) {
-  const result = await pool.query(
-    `
-    UPDATE tbluser1
-    SET ustatus = 'BLOCKED'
-    WHERE uid = $1
-    RETURNING uid
-    `,
-    [uid]
-  );
+  const result = await prisma.tbluser1.updateMany({
+    where: { uid },
+    data: { ustatus: "BLOCKED" },
+  });
 
-  if (result.rowCount === 0) {
+  if (result.count === 0) {
     throw new Error("User not found");
   }
+
+  return { uid, status: "BLOCKED" };
 }
 
-/* ================= UNBLOCK USER ================= */
+/* ============================================================
+   UNBLOCK USER
+============================================================ */
 
 async function unblockUser({ uid }) {
-  const result = await pool.query(
-    `
-    UPDATE tbluser1
-    SET ustatus = 'ACTIVE'
-    WHERE uid = $1
-    RETURNING uid
-    `,
-    [uid]
-  );
+  const result = await prisma.tbluser1.updateMany({
+    where: { uid },
+    data: { ustatus: "ACTIVE" },
+  });
 
-  if (result.rowCount === 0) {
+  if (result.count === 0) {
     throw new Error("User not found");
   }
+
+  return { uid, status: "ACTIVE" };
 }
+
+/* ============================================================
+   EXPORTS
+============================================================ */
 
 module.exports = {
   getAllPlatformUsers,

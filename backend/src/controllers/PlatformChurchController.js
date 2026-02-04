@@ -1,36 +1,44 @@
+// src/controllers/PlatformChurchController.js
+
 const {
   assignChurchAuthority,
   suspendChurch,
   activateChurch,
 } = require("../services/PlatformChurchService");
 
-const pool = require("../config/db");
+const prisma = require("../config/prisma");
 
+/* ============================================================
+   GET ALL APPROVED CHURCHES
+============================================================ */
 
-/* ================= GET ALL APPROVED CHURCHES ================= */
 async function getAllChurches(req, res) {
   try {
-    const result = await pool.query(`
-      SELECT
-        cid,
-        ccode,
-        cname,
-        cemail,
-        ccity,
-        cstate,
-        ccountry,
-        cstatus
-      FROM tblchurch
-      WHERE approvalstatus = 'APPROVED'
-      ORDER BY createdat DESC
-    `);
+    const churches = await prisma.tblchurch.findMany({
+      where: {
+        approvalstatus: "APPROVED",
+      },
+      select: {
+        cid: true,
+        ccode: true,
+        cname: true,
+        cemail: true,
+        ccity: true,
+        cstate: true,
+        ccountry: true,
+        cstatus: true,
+      },
+      orderBy: {
+        createdat: "desc",
+      },
+    });
 
     return res.status(200).json({
       success: true,
-      churches: result.rows,
+      churches,
     });
   } catch (error) {
-    console.error("GetAllChurches DB error:", error.message);
+    console.error("GetAllChurches error:", error.message);
     return res.status(500).json({
       success: false,
       message: "Failed to fetch churches",
@@ -38,50 +46,56 @@ async function getAllChurches(req, res) {
   }
 }
 
+/* ============================================================
+   SUSPEND CHURCH
+============================================================ */
 
-/* ================= SUSPEND CHURCH ================= */
 async function suspend(req, res) {
   try {
     const { cid } = req.params;
 
-    const church = await suspendChurch({
-      cid,
-      actionBy: req.user.uid,
-    });
+    const result = await suspendChurch({ cid });
 
     return res.status(200).json({
+      success: true,
       message: "Church suspended successfully",
-      church,
+      data: result,
     });
   } catch (error) {
     return res.status(400).json({
+      success: false,
       message: error.message,
     });
   }
 }
 
-/* ================= ACTIVATE CHURCH ================= */
+/* ============================================================
+   ACTIVATE CHURCH
+============================================================ */
+
 async function activate(req, res) {
   try {
     const { cid } = req.params;
 
-    const church = await activateChurch({
-      cid,
-      actionBy: req.user.uid,
-    });
+    const result = await activateChurch({ cid });
 
     return res.status(200).json({
+      success: true,
       message: "Church activated successfully",
-      church,
+      data: result,
     });
   } catch (error) {
     return res.status(400).json({
+      success: false,
       message: error.message,
     });
   }
 }
 
-/* ================= ASSIGN CHURCH AUTHORITY ================= */
+/* ============================================================
+   ASSIGN CHURCH AUTHORITY
+============================================================ */
+
 async function assignAuthority(req, res) {
   try {
     const { cid } = req.params;
@@ -89,6 +103,7 @@ async function assignAuthority(req, res) {
 
     if (!uemail) {
       return res.status(400).json({
+        success: false,
         message: "User email is required",
       });
     }
@@ -100,56 +115,62 @@ async function assignAuthority(req, res) {
     });
 
     return res.status(200).json({
+      success: true,
       message: "Church authority assigned successfully",
       data: result,
     });
   } catch (error) {
     return res.status(400).json({
+      success: false,
       message: error.message,
     });
   }
 }
 
-/* ================= GET CHURCH BY ID ================= */
+
+/* ============================================================
+   GET CHURCH BY ID (SAFE)
+============================================================ */
+
 async function getChurchById(req, res) {
   try {
-    const { churchId } = req.params;
+    const { cid } = req.params;
 
-    const result = await pool.query(
-      `
-      SELECT
-        cid,
-        ccode,
-        cname,
-        cdenomination,
-        cemail,
-        caddress,
-        ccity,
-        cstate,
-        ccountry,
-        cpincode,
-        ctimezone,
-        cstatus,
-        csubscriptionplan,
-        createdat
-      FROM tblchurch
-      WHERE cid = $1
-      `,
-      [churchId]
-    );
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: "Church not found" });
+    if (!cid) {
+      return res.status(400).json({
+        success: false,
+        message: "Church ID is required",
+      });
     }
 
-    return res.json({ church: result.rows[0] });
-  } catch (err) {
-    console.error("Get church error:", err);
-    return res.status(500).json({ message: "Internal server error" });
+    const church = await prisma.tblchurch.findUnique({
+      where: { cid },
+    });
+
+    if (!church) {
+      return res.status(404).json({
+        success: false,
+        message: "Church not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      church,
+    });
+  } catch (error) {
+    console.error("❌ getChurchById error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
   }
 }
 
 
+/* ============================================================
+   EXPORTS
+============================================================ */
 
 module.exports = {
   assignAuthority,
