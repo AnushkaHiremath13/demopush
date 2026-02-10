@@ -8,8 +8,8 @@ export default function Login() {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    uemail: "",
-    upassword: "",
+    email: "",
+    password: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -19,14 +19,14 @@ export default function Login() {
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value.trim(),
+      [e.target.name]: e.target.value,
     });
   };
 
   /* ================= LOGIN ================= */
 
   const handleLogin = async () => {
-    if (!formData.uemail || !formData.upassword) {
+    if (!formData.email || !formData.password) {
       alert("Email and password are required");
       return;
     }
@@ -36,57 +36,47 @@ export default function Login() {
 
       const res = await api("/auth/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+        body: {
+          email: formData.email,
+          password: formData.password,
+          login_scope: "PLATFORM", // 🔥 IMPORTANT
         },
-        body: JSON.stringify(formData),
       });
 
-      // store token + role
+      // ✅ STORE TOKEN
       localStorage.setItem("token", res.token);
-      localStorage.setItem("userType", res.userType);
+      localStorage.setItem("scope", res.scope);
 
-      // backend-controlled redirect
-      navigate(res.redirectTo);
-
+      // ✅ REDIRECT
+      navigate("/admin/dashboard");
     } catch (err) {
-      alert(err.message);
+      alert(err.message || "Login failed");
     } finally {
       setLoading(false);
     }
   };
 
-  /* ================= GOOGLE LOGIN (FUTURE) ================= */
-
-  const handleGoogleLogin = () => {
-    alert("Google login will be enabled soon");
-  };
-
-  /* ================= UI ================= */
-
   return (
     <div className="auth-wrapper login-layout">
       <div className="auth-form">
         <div className="form-box">
-          <h1>Login</h1>
+          <h1>Platform Login</h1>
 
           <input
             type="email"
             placeholder="Email"
-            name="uemail"
-            value={formData.uemail}
+            name="email"
+            value={formData.email}
             onChange={handleChange}
           />
 
           <input
             type="password"
             placeholder="Password"
-            name="upassword"
-            value={formData.upassword}
+            name="password"
+            value={formData.password}
             onChange={handleChange}
           />
-
-          <p className="forgot">Forgot Password!</p>
 
           <button
             className="primary-btn"
@@ -95,21 +85,6 @@ export default function Login() {
           >
             {loading ? "Logging in..." : "Login"}
           </button>
-
-          <div className="or">Or</div>
-
-          <button className="google-btn" onClick={handleGoogleLogin}>
-            <img
-              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-              alt="google"
-            />
-            Continue with Google
-          </button>
-
-          <p className="switch">
-            Don’t have an account?
-            <span onClick={() => navigate("/register")}> Register</span>
-          </p>
         </div>
       </div>
 

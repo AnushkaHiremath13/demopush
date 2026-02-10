@@ -10,25 +10,15 @@ export default function ChurchDetails() {
   const [church, setChurch] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  /* ================= DATE FORMATTER ================= */
-
-  const formatDate = (dateValue) => {
-    if (!dateValue) return "-";
-    const date = new Date(dateValue);
-    return date.toLocaleDateString("en-GB");
-  };
-
-  /* ================= LOAD DETAILS ================= */
+  const formatDate = (dateValue) =>
+    dateValue ? new Date(dateValue).toLocaleDateString("en-GB") : "-";
 
   useEffect(() => {
     const loadDetails = async () => {
       try {
-        const data = await api(
-          `/platform/church-applicants/${applicationId}`
-        );
-
-        if (data?.success) {
-          setChurch(data.application);
+        const res = await api(`/platform/church-applicants/${applicationId}`);
+        if (res?.success && res.application) {
+          setChurch(res.application);
         } else {
           setChurch(null);
         }
@@ -43,38 +33,22 @@ export default function ChurchDetails() {
     loadDetails();
   }, [applicationId]);
 
-  /* ================= ACTIONS ================= */
-
   const handleApprove = async () => {
-    try {
-      await api(
-        `/platform/church-applicants/${applicationId}/approve`,
-        { method: "PATCH" }
-      );
-      navigate("/admin/dashboard", { replace: true });
-    } catch (err) {
-      alert(err.message || "Approval failed");
-    }
+    await api(`/platform/church-applicants/${applicationId}/approve`, {
+      method: "PATCH",
+    });
+    navigate("/admin/dashboard", { replace: true });
   };
 
   const handleReject = async () => {
-    try {
-      await api(
-        `/platform/church-applicants/${applicationId}/reject`,
-        { method: "PATCH" }
-      );
-      navigate("/admin/dashboard", { replace: true });
-    } catch (err) {
-      alert(err.message || "Rejection failed");
-    }
+    await api(`/platform/church-applicants/${applicationId}/reject`, {
+      method: "PATCH",
+    });
+    navigate("/admin/dashboard", { replace: true });
   };
-
-  /* ================= STATES ================= */
 
   if (loading) return <p style={{ padding: 20 }}>Loading...</p>;
   if (!church) return <p style={{ padding: 20 }}>Application not found</p>;
-
-  /* ================= UI ================= */
 
   return (
     <div className="dashboard details-page">
@@ -82,78 +56,66 @@ export default function ChurchDetails() {
 
       <div className="dashboard-card large">
         <div className="details-header">
-          <h2>{church.cname}</h2>
+          <h2>{church.chr_app_name}</h2>
           <span className="status-pill pending">
-            {church.application_status}
+            {church.chr_app_status}
           </span>
         </div>
 
         <div className="details-section">
           <h4>Basic Information</h4>
-          <div className="details-list">
-            <div className="details-item">
-              <label>Church Code</label>
-              <span>{church.ccode}</span>
-            </div>
-            <div className="details-item">
-              <label>Denomination</label>
-              <span>{church.cdenomination || "-"}</span>
-            </div>
+          <div className="details-item">
+            <label>Church Code</label>
+            <span>{church.chr_app_code}</span>
+          </div>
+          <div className="details-item">
+            <label>Denomination</label>
+            <span>{church.chr_app_denomination || "-"}</span>
           </div>
         </div>
 
         <div className="details-section">
           <h4>Contact Information</h4>
-          <div className="details-list">
-            <div className="details-item">
-              <label>Email</label>
-              <span>{church.cemail || "-"}</span>
-            </div>
+          <div className="details-item">
+            <label>Email</label>
+            <span>{church.chr_app_email || "-"}</span> {/* ✅ WILL NOW SHOW */}
           </div>
         </div>
 
         <div className="details-section">
-          <h4>Address & Location</h4>
-          <div className="details-list">
-            <div className="details-item">
-              <label>Address</label>
-              <span>{church.caddress || "-"}</span>
-            </div>
-            <div className="details-item">
-              <label>City</label>
-              <span>{church.ccity || "-"}</span>
-            </div>
-            <div className="details-item">
-              <label>State</label>
-              <span>{church.cstate || "-"}</span>
-            </div>
-            <div className="details-item">
-              <label>Country</label>
-              <span>{church.ccountry || "-"}</span>
-            </div>
-            <div className="details-item">
-              <label>Pincode</label>
-              <span>{church.cpincode || "-"}</span>
-            </div>
-            <div className="details-item">
-              <label>Timezone</label>
-              <span>{church.ctimezone || "-"}</span>
-            </div>
+          <h4>Location</h4>
+          <div className="details-item">
+            <label>City</label>
+            <span>{church.chr_app_city || "-"}</span>
+          </div>
+          <div className="details-item">
+            <label>State</label>
+            <span>{church.chr_app_state || "-"}</span>
+          </div>
+          <div className="details-item">
+            <label>Country</label>
+            <span>{church.chr_app_country || "-"}</span>
+          </div>
+          <div className="details-item">
+            <label>Pincode</label>
+            <span>{church.chr_app_pincode || "-"}</span>
+          </div>
+          <div className="details-item">
+            <label>Timezone</label>
+            <span>{church.chr_app_timezone || "-"}</span>
           </div>
         </div>
 
         <div className="details-section">
           <h4>Application Info</h4>
-          <div className="details-list">
-            <div className="details-item">
-              <label>Applied On</label>
-              <span>{formatDate(church.applied_on)}</span>
-            </div>
+          <div className="details-item">
+            <label>Applied On</label>
+            <span>{formatDate(church.chr_app_applied_on)}</span>
           </div>
         </div>
 
         <div className="details-actions">
-          {church.application_status === "PENDING" && (
+          {church.chr_app_status === "PENDING" && (
             <>
               <button className="approve-btn" onClick={handleApprove}>
                 Approve

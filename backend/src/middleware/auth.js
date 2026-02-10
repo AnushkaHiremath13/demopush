@@ -1,12 +1,8 @@
-// src/middleware/auth.js
-
 const jwt = require("jsonwebtoken");
+const { verifyToken } = require("../utils/token");
+/* ================= BASE AUTH ================= */
 
-/* ============================================================
-   AUTHENTICATE ANY LOGGED-IN USER
-============================================================ */
-
-function authenticateUser(req, res, next) {
+function authenticate(req, res, next) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -16,67 +12,60 @@ function authenticateUser(req, res, next) {
     });
   }
 
-  const token = authHeader.split(" ")[1];
-
-  if (!process.env.JWT_SECRET) {
-    console.error("JWT_SECRET is not defined");
-    return res.status(500).json({
-      success: false,
-      message: "Authentication configuration error",
-    });
-  }
-
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
+    const token = authHeader.split(" ")[1];
+    const decoded = verifyToken(token, process.env.JWT_SECRET);
+    req.auth = decoded;
     next();
-  } catch (error) {
-    console.error("JWT verification failed:", error.message);
+  } catch (err) {
     return res.status(401).json({
       success: false,
-      message: "Invalid or expired token",
+      message: `${err.message || "Invalid or expired token"}`,
     });
   }
 }
 
-/* ============================================================
-   AUTHENTICATE PLATFORM ADMIN
-============================================================ */
+/* ================= PLATFORM ================= */
 
-function authenticatePlatform(req, res, next) {
-  authenticateUser(req, res, () => {
-    if (!req.user || req.user.userType !== "PLATFORM") {
+function requirePlatform(req, res, next) {
+  authenticate(req, res, () => {
+    if (!req.auth || req.auth.scope !== "PLATFORM" || !req.auth.plt_id) {
       return res.status(403).json({
         success: false,
         message: "Platform access required",
       });
     }
+
+    // 🔥 THIS IS WHAT YOUR CONTROLLERS EXPECT
+    req.platform = {
+      plt_id: req.auth.plt_id,
+    };
+
     next();
   });
 }
 
-/* ============================================================
-   AUTHENTICATE CHURCH AUTHORITY
-============================================================ */
 
-function authenticateChurchAuthority(req, res, next) {
-  authenticateUser(req, res, () => {
-    if (!req.user || req.user.userType !== "CHURCH_AUTHORITY") {
+/* ================= COMMUNITY ================= */
+
+function requireCommunity(req, res, next) {
+  authenticate(req, res, () => {
+    if (!req.auth || req.auth.scope !== "COMMUNITY" || !req.auth.usr_id) {
       return res.status(403).json({
         success: false,
-        message: "Church authority access required",
+        message: "Community access required",
       });
     }
+
+    req.user = {
+      usr_id: req.auth.usr_id,
+    };
+
     next();
   });
 }
-
-/* ============================================================
-   EXPORTS
-============================================================ */
-
 module.exports = {
-  authenticateUser,
-  authenticatePlatform,
-  authenticateChurchAuthority,
+  authenticate,
+  requirePlatform,
+  requireCommunity,
 };

@@ -1,192 +1,69 @@
-// import { useState } from "react";
-// import { useNavigate } from "react-router-dom";
-// import { api } from "../api/api";
-// //import "./auth.css";
-// import church from "../assets/church.png";
-
-// export default function Register() {
-//   const navigate = useNavigate();
-
-//   const [formData, setFormData] = useState({
-//     uname: "",
-//     uemail: "",
-//     uphone: "",
-//     ccode: "",
-//     upassword: "",
-//     uconfirmpassword: "",
-//   });
-
-//   const handleChange = (e) => {
-//     setFormData({
-//       ...formData,
-//       [e.target.name]: e.target.value,
-//     });
-//   };
-
-//   const handleRegister = async () => {
-//     try {
-//       const res = await api("/auth/register", {
-//         method: "POST",
-//         body: JSON.stringify(formData),
-//       });
-
-//       alert(res.message);
-//       navigate("/");
-//     } catch (err) {
-//       alert(err.message);
-//     }
-//   };
-
-//   const handleGoogleRegister = () => {
-//     alert("Google registration will be enabled soon");
-//     // Later: window.location.href = "http://localhost:5000/api/auth/google";
-//   };
-
-//   return (
-//     <div className="auth-wrapper register-layout">
-//       <div className="auth-form">
-//         <div className="form-box">
-//           <h1>Register</h1>
-
-//           <input
-//             type="text"
-//             placeholder="Your full name"
-//             name="uname"
-//             value={formData.uname}
-//             onChange={handleChange}
-//           />
-
-//           <input
-//             type="email"
-//             placeholder="Email"
-//             name="uemail"
-//             value={formData.uemail}
-//             onChange={handleChange}
-//           />
-
-//           <input
-//             type="text"
-//             placeholder="Contact number"
-//             name="uphone"
-//             value={formData.uphone}
-//             onChange={handleChange}
-//           />
-
-//           <input
-//             type="text"
-//             placeholder="Church Code"
-//             name="ccode"
-//             value={formData.ccode}
-//             onChange={handleChange}
-//           />
-
-//           <input
-//             type="password"
-//             placeholder="Set Password"
-//             name="upassword"
-//             value={formData.upassword}
-//             onChange={handleChange}
-//           />
-
-//           <input
-//             type="password"
-//             placeholder="Confirm Password"
-//             name="uconfirmpassword"
-//             value={formData.uconfirmpassword}
-//             onChange={handleChange}
-//           />
-
-//           <button className="primary-btn" onClick={handleRegister}>
-//             Next
-//           </button>
-
-//           <p className="switch small">
-//             Already have an Account?
-//             <span onClick={() => navigate("/")}> Login</span>
-//           </p>
-
-//           <div className="or">Or</div>
-
-//           <button className="google-btn" onClick={handleGoogleRegister}>
-//             <img
-//               src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-//               alt="google"
-//             />
-//             Continue with Google
-//           </button>
-//         </div>
-//       </div>
-
-//       <div className="auth-image curved-right">
-//         <img src={church} alt="church" />
-//       </div>
-//     </div>
-//   );
-// }
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/api";
+import "./auth.css";
+import church from "../assets/church.png";
 
-export default function Register() {
+export default function Login() {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    uname: "",
-    uemail: "",
-    uphone: "",
-    ccode: "",
-    upassword: "",
-    uconfirmpassword: "",
+    email: "",
+    password: "",
+    login_scope: "COMMUNITY", // default
   });
 
   const [loading, setLoading] = useState(false);
 
-  /* ================= HANDLE CHANGE ================= */
+  /* ================= INPUT CHANGE ================= */
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value.trim(),
-    });
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  /* ================= REGISTER ================= */
+  /* ================= LOGIN ================= */
 
-  const handleRegister = async () => {
-    const {
-      uname,
-      uemail,
-      upassword,
-      uconfirmpassword,
-    } = formData;
+  const handleLogin = async () => {
+    const { email, password, login_scope } = formData;
 
-    // 🔒 basic validation
-    if (!uname || !uemail || !upassword || !uconfirmpassword) {
-      alert("Please fill all required fields");
-      return;
-    }
-
-    if (upassword !== uconfirmpassword) {
-      alert("Passwords do not match");
+    if (!email || !password) {
+      alert("Email and password are required");
       return;
     }
 
     try {
       setLoading(true);
 
-      const res = await api("/auth/register", {
+      const payload = {
+        email: email.trim().toLowerCase(),
+        password,
+        login_scope,
+      };
+
+      const res = await api("/auth/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
+        body: payload,
       });
 
-      alert(res.message || "Registration successful");
-      navigate("/");
+      // ✅ store token
+      localStorage.setItem("token", res.token);
+      localStorage.setItem("scope", res.scope);
 
+      // optional identity storage
+      localStorage.setItem("identity", JSON.stringify(res.identity));
+
+      // ✅ role-based redirect
+      if (res.scope === "PLATFORM") {
+        navigate("/platform/dashboard");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
-      alert(err.message || "Registration failed");
+      alert(err.message || "Login failed");
     } finally {
       setLoading(false);
     }
@@ -195,76 +72,57 @@ export default function Register() {
   /* ================= UI ================= */
 
   return (
-    <div style={{ padding: 40, maxWidth: 420 }}>
-      <h2>Register</h2>
+    <div className="auth-wrapper login-layout">
+      <div className="auth-form">
+        <div className="form-box">
+          <h1>Login</h1>
 
-      <input
-        type="text"
-        placeholder="Full Name"
-        name="uname"
-        value={formData.uname}
-        onChange={handleChange}
-      />
-      <br /><br />
+          {/* LOGIN SCOPE */}
+          <select
+            name="login_scope"
+            value={formData.login_scope}
+            onChange={handleChange}
+          >
+            <option value="COMMUNITY">Community User</option>
+            <option value="PLATFORM">Platform Admin</option>
+          </select>
 
-      <input
-        type="email"
-        placeholder="Email"
-        name="uemail"
-        value={formData.uemail}
-        onChange={handleChange}
-      />
-      <br /><br />
+          <input
+            type="email"
+            placeholder="Email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+          />
 
-      <input
-        type="text"
-        placeholder="Phone Number"
-        name="uphone"
-        value={formData.uphone}
-        onChange={handleChange}
-      />
-      <br /><br />
+          <input
+            type="password"
+            placeholder="Password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+          />
 
-      <input
-        type="text"
-        placeholder="Church Code (optional)"
-        name="ccode"
-        value={formData.ccode}
-        onChange={handleChange}
-      />
-      <br /><br />
+          <p className="forgot">Forgot Password?</p>
 
-      <input
-        type="password"
-        placeholder="Password"
-        name="upassword"
-        value={formData.upassword}
-        onChange={handleChange}
-      />
-      <br /><br />
+          <button
+            className="primary-btn"
+            onClick={handleLogin}
+            disabled={loading}
+          >
+            {loading ? "Logging in..." : "Login"}
+          </button>
 
-      <input
-        type="password"
-        placeholder="Confirm Password"
-        name="uconfirmpassword"
-        value={formData.uconfirmpassword}
-        onChange={handleChange}
-      />
-      <br /><br />
+          <p className="switch">
+            Don’t have an account?
+            <span onClick={() => navigate("/register")}> Register</span>
+          </p>
+        </div>
+      </div>
 
-      <button onClick={handleRegister} disabled={loading}>
-        {loading ? "Registering..." : "Register"}
-      </button>
-
-      <p style={{ marginTop: 16 }}>
-        Already have an account?{" "}
-        <span
-          style={{ color: "blue", cursor: "pointer" }}
-          onClick={() => navigate("/")}
-        >
-          Login
-        </span>
-      </p>
+      <div className="auth-image curved-right">
+        <img src={church} alt="church" />
+      </div>
     </div>
   );
 }

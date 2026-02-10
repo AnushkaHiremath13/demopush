@@ -7,10 +7,10 @@ import { api } from "./api";
 export async function loginUser({ uemail, upassword }) {
   return api("/auth/login", {
     method: "POST",
-    body: JSON.stringify({
+    body: {
       uemail,
       upassword,
-    }),
+    },
   });
 }
 
@@ -28,13 +28,13 @@ export async function registerUser({
 }) {
   return api("/auth/register", {
     method: "POST",
-    body: JSON.stringify({
+    body: {
       uname,
       uemail,
       upassword,
       uconfirmpassword,
       uphone,
       ccode,
-    }),
+    },
   });
 }

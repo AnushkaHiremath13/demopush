@@ -3,8 +3,6 @@ import { useNavigate } from "react-router-dom";
 import "../../styles/dashboard.css";
 import { api } from "../../api/api";
 
-
-
 /* ================= DATE + AGING ================= */
 function formatDateWithAging(dateString) {
   if (!dateString) return "-";
@@ -29,7 +27,6 @@ export default function PendingChurches() {
   const navigate = useNavigate();
 
   /* ================= FETCH PENDING ================= */
-
   useEffect(() => {
     const loadPending = async () => {
       try {
@@ -79,14 +76,14 @@ export default function PendingChurches() {
 
           <tbody>
             {pendingChurches.map((church) => (
-              <tr key={church.application_id}>
-                <td>{church.ccode}</td>
-                <td>{church.cname}</td>
-                <td>{church.cemail || "-"}</td>
-                <td>{church.ccity || "-"}</td>
-                <td>{church.cstate || "-"}</td>
-                <td>{church.ccountry || "-"}</td>
-                <td>{formatDateWithAging(church.applied_on)}</td>
+              <tr key={church.chr_app_id}>
+                <td>{church.chr_app_code}</td>
+                <td>{church.chr_app_name}</td>
+                <td>{church.chr_app_email || "-"}</td>
+                <td>{church.chr_app_city || "-"}</td>
+                <td>{church.chr_app_state || "-"}</td>
+                <td>{church.chr_app_country || "-"}</td>
+                <td>{formatDateWithAging(church.chr_app_applied_on)}</td>
 
                 <td className="action-cell">
                   <button
@@ -94,7 +91,7 @@ export default function PendingChurches() {
                     title="View Details"
                     onClick={() =>
                       navigate(
-                        `/admin/church/application/${church.application_id}`
+                        `/admin/church/application/${church.chr_app_id}`
                       )
                     }
                   >

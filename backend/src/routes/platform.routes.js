@@ -1,10 +1,7 @@
-// src/routes/platform.routes.js
-
 const express = require("express");
 const router = express.Router();
 
-
-const { authenticatePlatform } = require("../middleware/auth");
+const { requirePlatform } = require("../middleware/auth");
 
 /* ============================================================
    DASHBOARD
@@ -12,7 +9,11 @@ const { authenticatePlatform } = require("../middleware/auth");
 
 const { getDashboardStats } = require("../controllers/DashboardController");
 
-router.get("/dashboard", authenticatePlatform, getDashboardStats);
+router.get(
+  "/dashboard",
+  requirePlatform,
+  getDashboardStats
+);
 
 /* ============================================================
    SECURITY LOGS
@@ -20,10 +21,14 @@ router.get("/dashboard", authenticatePlatform, getDashboardStats);
 
 const { getSecurityLogs } = require("../controllers/SecurityLogController");
 
-router.get("/security-logs", authenticatePlatform, getSecurityLogs);
+router.get(
+  "/security-logs",
+  requirePlatform,
+  getSecurityLogs
+);
 
 /* ============================================================
-   CHURCH APPLICANTS
+   CHURCH APPLICATIONS
 ============================================================ */
 
 const {
@@ -33,29 +38,27 @@ const {
   rejectChurchApplicant,
 } = require("../controllers/ChurchApplicantController");
 
-
-
 router.get(
   "/church-applicants",
-  authenticatePlatform,
+  requirePlatform,
   getChurchApplicants
 );
 
 router.get(
   "/church-applicants/:applicationId",
-  authenticatePlatform,
+  requirePlatform,
   getChurchApplicantById
 );
 
 router.patch(
   "/church-applicants/:applicationId/approve",
-  authenticatePlatform,
+  requirePlatform,
   approveChurchApplicant
 );
 
 router.patch(
   "/church-applicants/:applicationId/reject",
-  authenticatePlatform,
+  requirePlatform,
   rejectChurchApplicant
 );
 
@@ -71,50 +74,44 @@ const {
   activate,
 } = require("../controllers/PlatformChurchController");
 
-// ✅ LIST ALL APPROVED CHURCHES
 router.get(
   "/churches",
-  authenticatePlatform,
+  requirePlatform,
   getAllChurches
 );
 
-// ✅ GET CHURCH BY ID (plural – existing)
 router.get(
-  "/churches/:cid",
-  authenticatePlatform,
+  "/churches/:churchId",
+  requirePlatform,
   getChurchById
 );
 
-// ✅ GET CHURCH BY ID (singular – for frontend compatibility)
 router.get(
-  "/church/:cid",
-  authenticatePlatform,
+  "/church/:churchId",
+  requirePlatform,
   getChurchById
 );
 
-// ✅ SUSPEND CHURCH
 router.patch(
-  "/churches/:cid/suspend",
-  authenticatePlatform,
+  "/churches/:churchId/suspend",
+  requirePlatform,
   suspend
 );
 
-// ✅ ACTIVATE CHURCH
 router.patch(
-  "/churches/:cid/activate",
-  authenticatePlatform,
+  "/churches/:churchId/activate",
+  requirePlatform,
   activate
 );
 
-// ✅ ASSIGN AUTHORITY
 router.post(
-  "/churches/:cid/assign-authority",
-  authenticatePlatform,
+  "/churches/:churchId/assign-authority",
+  requirePlatform,
   assignAuthority
 );
 
 /* ============================================================
-   USERS
+   COMMUNITY USERS (PLATFORM CONTROL)
 ============================================================ */
 
 const {
@@ -125,46 +122,20 @@ const {
 
 router.get(
   "/users",
-  authenticatePlatform,
+  requirePlatform,
   getUsers
 );
 
 router.patch(
-  "/users/:uid/block",
-  authenticatePlatform,
+  "/users/:userId/block",
+  requirePlatform,
   block
 );
 
 router.patch(
-  "/users/:uid/unblock",
-  authenticatePlatform,
+  "/users/:userId/unblock",
+  requirePlatform,
   unblock
 );
-/* ============================================================
-   BULK EMPLOYEE ASSIGNMENTS
-============================================================ */
-
-const upload = require("../middleware/UploadMiddleware");
-const {
-  getEmployeeAssignments,
-  bulkAssignEmployees,
-} = require("../controllers/EmployeeAssignmentController");
-
-router.post(
-  "/employee-assignments/bulk",
-  authenticatePlatform,
-  upload.single("file"),
-  bulkAssignEmployees
-);
-
-router.get(
-  "/employee-assignments",
-  authenticatePlatform,
-  getEmployeeAssignments
-);
-
-/* ============================================================
-   EXPORTS
-============================================================ */
 
 module.exports = router;

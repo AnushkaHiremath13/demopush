@@ -1,78 +1,100 @@
 import { useState } from "react";
-
-const API_BASE = "http://localhost:5000/api";
+import { api } from "../api/api";
 
 export default function ChurchRegister() {
   const [formData, setFormData] = useState({
-    ccode: "",
-    cname: "",
-    caddress: "",
-    cemail: "",
-    ccity: "",
-    cstate: "",
-    ccountry: "",
-    cpincode: "",
-    cdenomination: "",
-    ctimezone: "Asia/Kolkata",
+    code: "",
+    name: "",
+    email: "",
+    address: "",
+    city: "",
+    state: "",
+    country: "",
+    pincode: "",
+    denomination: "",
+    timezone: "Asia/Kolkata",
   });
 
   const [loading, setLoading] = useState(false);
 
+  /* ================= HANDLE CHANGE ================= */
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    if (name === "ccode") {
-      setFormData({ ...formData, ccode: value.toUpperCase() });
-    } else {
-      setFormData({ ...formData, [name]: value });
-    }
+    setFormData((prev) => ({
+      ...prev,
+      [name]: name === "code" ? value.toUpperCase() : value,
+    }));
   };
+
+  /* ================= SUBMIT ================= */
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+
+    const {
+      code,
+      name,
+      email,
+      address,
+      city,
+      state,
+      country,
+      pincode,
+      denomination,
+      timezone,
+    } = formData;
+
+    if (!code || !name || !email) {
+      alert("Church code, name and email are required");
+      return;
+    }
 
     try {
-      const res = await fetch(`${API_BASE}/church/apply`, {
+      setLoading(true);
+
+      // ✅ BACKEND-CORRECT PAYLOAD
+      const payload = {
+        chr_app_code: code,
+        chr_app_name: name,
+        chr_app_email: email.toLowerCase(),
+        chr_app_denomination: denomination,
+        chr_app_location: address,
+        chr_app_timezone: timezone,
+        chr_app_city: city,
+        chr_app_state: state,
+        chr_app_country: country,
+        chr_app_pincode: pincode,
+      };
+
+      await api("/church/apply", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
+        body: payload,
       });
 
-      // ✅ SAFE JSON PARSING
-      let data = {};
-      try {
-        data = await res.json();
-      } catch {
-        data = {};
-      }
-
-      if (!res.ok) {
-        throw new Error(data.message || "Church registration failed");
-      }
-
-      alert("Church registration submitted for approval ✅");
+      alert("Church application submitted for approval ✅");
 
       setFormData({
-        ccode: "",
-        cname: "",
-        caddress: "",
-        cemail: "",
-        ccity: "",
-        cstate: "",
-        ccountry: "",
-        cpincode: "",
-        cdenomination: "",
-        ctimezone: "Asia/Kolkata",
+        code: "",
+        name: "",
+        email: "",
+        address: "",
+        city: "",
+        state: "",
+        country: "",
+        pincode: "",
+        denomination: "",
+        timezone: "Asia/Kolkata",
       });
     } catch (err) {
-      alert(err.message);
+      alert(err.message || "Church registration failed");
     } finally {
       setLoading(false);
     }
   };
+
+  /* ================= UI ================= */
 
   return (
     <div style={styles.container}>
@@ -80,24 +102,38 @@ export default function ChurchRegister() {
 
       <form onSubmit={handleSubmit} style={styles.form}>
         <input
-          name="ccode"
+          name="code"
           placeholder="Church Code"
-          value={formData.ccode}
+          value={formData.code}
           onChange={handleChange}
-          style={{ textTransform: "uppercase" }}
           required
         />
 
-        <input name="cname" placeholder="Church Name" value={formData.cname} onChange={handleChange} required />
-        <input name="cemail" type="email" placeholder="Church Email" value={formData.cemail} onChange={handleChange} required />
-        <input name="caddress" placeholder="Address" value={formData.caddress} onChange={handleChange} />
-        <input name="ccity" placeholder="City" value={formData.ccity} onChange={handleChange} />
-        <input name="cstate" placeholder="State" value={formData.cstate} onChange={handleChange} />
-        <input name="ccountry" placeholder="Country" value={formData.ccountry} onChange={handleChange} />
-        <input name="cpincode" placeholder="Pincode" value={formData.cpincode} onChange={handleChange} />
-        <input name="cdenomination" placeholder="Denomination" value={formData.cdenomination} onChange={handleChange} />
+        <input
+          name="name"
+          placeholder="Church Name"
+          value={formData.name}
+          onChange={handleChange}
+          required
+        />
 
-        <select name="ctimezone" value={formData.ctimezone} onChange={handleChange}>
+        <input
+          name="email"
+          type="email"
+          placeholder="Church Email"
+          value={formData.email}
+          onChange={handleChange}
+          required
+        />
+
+        <input name="address" placeholder="Address" value={formData.address} onChange={handleChange} />
+        <input name="city" placeholder="City" value={formData.city} onChange={handleChange} />
+        <input name="state" placeholder="State" value={formData.state} onChange={handleChange} />
+        <input name="country" placeholder="Country" value={formData.country} onChange={handleChange} />
+        <input name="pincode" placeholder="Pincode" value={formData.pincode} onChange={handleChange} />
+        <input name="denomination" placeholder="Denomination" value={formData.denomination} onChange={handleChange} />
+
+        <select name="timezone" value={formData.timezone} onChange={handleChange}>
           <option value="Asia/Kolkata">Asia/Kolkata</option>
           <option value="UTC">UTC</option>
         </select>
@@ -109,6 +145,8 @@ export default function ChurchRegister() {
     </div>
   );
 }
+
+/* ================= STYLES ================= */
 
 const styles = {
   container: {

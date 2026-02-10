@@ -7,16 +7,19 @@ const {
   register,
   login,
   logout,
-} = require("../controllers/auth.controller");
-
-const { authenticateUser } = require("../middleware/auth");
+} = require("../controllers/AuthController");
 
 /* ============================================================
    AUTH ROUTES
 ============================================================ */
 
+// Community user registration
 router.post("/register", register);
+
+// Login (community user or platform admin)
 router.post("/login", login);
-router.post("/logout", authenticateUser, logout);
+
+// Stateless logout (client deletes token)(stateless)
+router.post("/logout", logout);
 
 module.exports = router;

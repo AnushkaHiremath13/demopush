@@ -26,19 +26,22 @@ export default function PlatformUsers() {
 
   /* ================= BLOCK / UNBLOCK ================= */
 
-  const updateStatus = async (uid, action) => {
+  const updateStatus = async (usr_id, action) => {
     try {
       const endpoint =
         action === "BLOCK"
-          ? `/platform/users/${uid}/block`
-          : `/platform/users/${uid}/unblock`;
+          ? `/platform/users/${usr_id}/block`
+          : `/platform/users/${usr_id}/unblock`;
 
-      await api(endpoint, { method: "PATCH" }); // ✅ PATCH (not POST)
+      await api(endpoint, { method: "PATCH" });
 
       setUsers((prev) =>
         prev.map((u) =>
-          u.uid === uid
-            ? { ...u, ustatus: action === "BLOCK" ? "BLOCKED" : "ACTIVE" }
+          u.usr_id === usr_id
+            ? {
+                ...u,
+                usr_status: action === "BLOCK" ? "BLOCKED" : "ACTIVE",
+              }
             : u
         )
       );
@@ -48,11 +51,12 @@ export default function PlatformUsers() {
     }
   };
 
-  /* ================= AUTHORITY LABEL ================= */
+  /* ================= AUTHORITY ================= */
 
-  const getAuthorityLabel = (user) => {
-    if (user.uisplatform) return "PLATFORM";
-    if (user.uisemployee) return "CHURCH STAFF";
+  const getAuthorityLabel = (roles = []) => {
+    if (roles.includes("PLATFORM_ADMIN")) return "PLATFORM";
+    if (roles.includes("CHURCH_ADMIN")) return "CHURCH ADMIN";
+    if (roles.includes("EMPLOYEE")) return "CHURCH STAFF";
     return "FOLLOWER";
   };
 
@@ -83,41 +87,43 @@ export default function PlatformUsers() {
 
           <tbody>
             {users.map((user) => (
-              <tr key={user.uid}>
-                <td>{user.uid}</td>
-                <td>{user.uname}</td>
-                <td>{user.uemail}</td>
+              <tr key={user.usr_id}>
+                <td>{user.usr_id}</td>
+                <td>{user.usr_name}</td>
+                <td>{user.usr_email}</td>
 
                 <td>
-                  <strong>{getAuthorityLabel(user)}</strong>
+                  <strong>{getAuthorityLabel(user.roles)}</strong>
                 </td>
 
                 <td>
                   <span
-                    className={`status-pill ${
-                      user.ustatus
-                        ? user.ustatus.toLowerCase()
-                        : "unknown"
-                    }`}
+                    className={`status-pill ${user.usr_status.toLowerCase()}`}
                   >
-                    {user.ustatus || "UNKNOWN"}
+                    {user.usr_status}
                   </span>
                 </td>
 
-                <td>{user.createdat || "-"}</td>
+                <td>
+                  {new Date(user.usr_created_at).toLocaleDateString("en-GB")}
+                </td>
 
                 <td>
-                  {user.ustatus === "BLOCKED" ? (
+                  {user.usr_status === "BLOCKED" ? (
                     <button
                       className="approve-btn"
-                      onClick={() => updateStatus(user.uid, "UNBLOCK")}
+                      onClick={() =>
+                        updateStatus(user.usr_id, "UNBLOCK")
+                      }
                     >
                       Unblock
                     </button>
                   ) : (
                     <button
                       className="reject-btn"
-                      onClick={() => updateStatus(user.uid, "BLOCK")}
+                      onClick={() =>
+                        updateStatus(user.usr_id, "BLOCK")
+                      }
                     >
                       Block
                     </button>

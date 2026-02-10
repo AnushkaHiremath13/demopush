@@ -34,24 +34,23 @@ export default function AllChurches() {
 
   /* ================= STATUS ACTION ================= */
 
-  const updateStatus = async (cid, action) => {
+  const updateStatus = async (chr_id, action) => {
     try {
       const endpoint =
         action === "SUSPEND"
-          ? `/platform/churches/${cid}/suspend`
-          : `/platform/churches/${cid}/activate`;
+          ? `/platform/churches/${chr_id}/suspend`
+          : `/platform/churches/${chr_id}/activate`;
 
-      const data = await api(endpoint, {
-        method: "PATCH",
-      });
+      const data = await api(endpoint, { method: "PATCH" });
 
       if (data?.success) {
         setChurches((prev) =>
           prev.map((c) =>
-            c.cid === cid
+            c.chr_id === chr_id
               ? {
                   ...c,
-                  cstatus: action === "SUSPEND" ? "SUSPENDED" : "ACTIVE",
+                  chr_approval_status:
+                    action === "SUSPEND" ? "SUSPENDED" : "APPROVED",
                 }
               : c
           )
@@ -93,19 +92,19 @@ export default function AllChurches() {
 
           <tbody>
             {churches.map((church) => (
-              <tr key={church.cid}>
-                <td>{church.ccode}</td>
-                <td>{church.cname}</td>
-                <td>{church.cemail || "-"}</td>
-                <td>{church.ccity || "-"}</td>
-                <td>{church.cstate || "-"}</td>
-                <td>{church.ccountry || "-"}</td>
+              <tr key={church.chr_id}>
+                <td>{church.chr_code}</td>
+                <td>{church.chr_name}</td>
+                <td>{church.chr_email || "-"}</td>
+                <td>{church.chr_city || "-"}</td>
+                <td>{church.chr_state || "-"}</td>
+                <td>{church.chr_country || "-"}</td>
 
                 <td>
                   <span
-                    className={`status-pill ${church.cstatus.toLowerCase()}`}
+                    className={`status-pill ${church.chr_approval_status.toLowerCase()}`}
                   >
-                    {church.cstatus}
+                    {church.chr_approval_status}
                   </span>
                 </td>
 
@@ -113,22 +112,28 @@ export default function AllChurches() {
                   <button
                     className="icon-btn"
                     title="View Church"
-                    onClick={() => navigate(`/admin/church/${church.cid}`)}
+                    onClick={() =>
+                      navigate(`/admin/church/${church.chr_id}`)
+                    }
                   >
                     👁
                   </button>
 
-                  {church.cstatus === "ACTIVE" ? (
+                  {church.chr_approval_status === "APPROVED" ? (
                     <button
                       className="reject-btn"
-                      onClick={() => updateStatus(church.cid, "SUSPEND")}
+                      onClick={() =>
+                        updateStatus(church.chr_id, "SUSPEND")
+                      }
                     >
                       Suspend
                     </button>
                   ) : (
                     <button
                       className="approve-btn"
-                      onClick={() => updateStatus(church.cid, "ACTIVATE")}
+                      onClick={() =>
+                        updateStatus(church.chr_id, "ACTIVATE")
+                      }
                     >
                       Activate
                     </button>

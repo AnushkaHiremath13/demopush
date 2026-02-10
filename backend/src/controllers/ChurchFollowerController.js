@@ -7,21 +7,38 @@ const {
 } = require("../services/ChurchFollowerService");
 
 /* ============================================================
-   GET PENDING FOLLOWERS
+   GET PENDING FOLLOWERS (CHURCH ADMIN)
 ============================================================ */
 
 async function pending(req, res) {
   try {
-    const followers = await getPendingFollowers({
-      handlerUid: req.user.uid,
-    });
+    const { chr_id } = req.params;
+    const adminUsrId = req.user.usr_id;
+
+    if (!chr_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Church ID is required",
+      });
+    }
+
+    const followers = await getPendingFollowers(chr_id, adminUsrId);
 
     return res.status(200).json({
       success: true,
       followers,
     });
   } catch (error) {
-    return res.status(403).json({
+    console.error("❌ pending followers error:", error.message);
+
+    const status =
+      error.message.toLowerCase().includes("not authorized")
+        ? 403
+        : error.message.toLowerCase().includes("not found")
+        ? 404
+        : 500;
+
+    return res.status(status).json({
       success: false,
       message: error.message,
     });
@@ -34,20 +51,33 @@ async function pending(req, res) {
 
 async function approve(req, res) {
   try {
-    const { uid } = req.params;
+    const { chr_id, usr_id } = req.params;
+    const adminUsrId = req.user.usr_id;
 
-    const result = await approveFollower({
-      handlerUid: req.user.uid,
-      followerUid: uid,
-    });
+    if (!chr_id || !usr_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Church ID and User ID are required",
+      });
+    }
+
+    await approveFollower(chr_id, usr_id, adminUsrId);
 
     return res.status(200).json({
       success: true,
       message: "Follower approved successfully",
-      data: result,
     });
   } catch (error) {
-    return res.status(403).json({
+    console.error("❌ approve follower error:", error.message);
+
+    const status =
+      error.message.toLowerCase().includes("not authorized")
+        ? 403
+        : error.message.toLowerCase().includes("not found")
+        ? 404
+        : 500;
+
+    return res.status(status).json({
       success: false,
       message: error.message,
     });
@@ -60,20 +90,33 @@ async function approve(req, res) {
 
 async function reject(req, res) {
   try {
-    const { uid } = req.params;
+    const { chr_id, usr_id } = req.params;
+    const adminUsrId = req.user.usr_id;
 
-    const result = await rejectFollower({
-      handlerUid: req.user.uid,
-      followerUid: uid,
-    });
+    if (!chr_id || !usr_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Church ID and User ID are required",
+      });
+    }
+
+    await rejectFollower(chr_id, usr_id, adminUsrId);
 
     return res.status(200).json({
       success: true,
       message: "Follower rejected successfully",
-      data: result,
     });
   } catch (error) {
-    return res.status(403).json({
+    console.error("❌ reject follower error:", error.message);
+
+    const status =
+      error.message.toLowerCase().includes("not authorized")
+        ? 403
+        : error.message.toLowerCase().includes("not found")
+        ? 404
+        : 500;
+
+    return res.status(status).json({
       success: false,
       message: error.message,
     });

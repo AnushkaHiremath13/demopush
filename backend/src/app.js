@@ -2,13 +2,13 @@
 
 const express = require("express");
 const cors = require("cors");
+const multer = require("multer");
 require("dotenv").config();
 
 const authRoutes = require("./routes/auth.routes");
 const platformRoutes = require("./routes/platform.routes");
 const churchRoutes = require("./routes/church.routes");
 const userRoutes = require("./routes/user.routes");
-
 
 const app = express();
 
@@ -22,17 +22,15 @@ const API_PREFIX = process.env.API_PREFIX || "/api";
    MIDDLEWARE
 ============================================================ */
 
-app.disable("x-powered-by"); // 🔐 security best practice
+app.disable("x-powered-by");
 
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",     // local dev
-      "https://powaha.com",        // production
-      "https://www.powaha.com",    // production
-    ],
+    origin: process.env.CORS_ORIGIN
+      ? process.env.CORS_ORIGIN.split(",")
+      : true,
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -43,33 +41,47 @@ app.use(
    ROUTES
 ============================================================ */
 
-// app.use(`${API_PREFIX}/auth`, authRoutes);
-// app.use(`${API_PREFIX}/platform`, platformRoutes);
-// app.use(`${API_PREFIX}/church`, churchRoutes);
-
-app.use(express.json());
-
-app.use("/api/auth", authRoutes);
-app.use("/api/platform", platformRoutes);
-app.use("/api/church", churchRoutes);
+app.use(`${API_PREFIX}/auth`, authRoutes);
+app.use(`${API_PREFIX}/platform`, platformRoutes);
+app.use(`${API_PREFIX}/church`, churchRoutes);
+app.use(`${API_PREFIX}/user`, userRoutes);
 
 /* ============================================================
-   GLOBAL ERROR HANDLER (LAST RESORT)
+   404 HANDLER
+============================================================ */
+
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "API route not found",
+  });
+});
+
+/* ============================================================
+   GLOBAL ERROR HANDLER
 ============================================================ */
 
 app.use((err, req, res, next) => {
   console.error("Unhandled error:", err);
 
-  return res.status(500).json({
+  // Multer errors (file upload)
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+
+  // Custom status if provided
+  const status = err.statusCode || err.status || 500;
+
+  res.status(status).json({
     success: false,
-    message: "Internal server error",
+    message:
+      status === 500
+        ? "Internal server error"
+        : err.message || "Request failed",
   });
 });
 
-/* ============================================================
-   USER ROUTES
-============================================================ */
-app.use("/api/user", userRoutes);
-
 module.exports = app;
-

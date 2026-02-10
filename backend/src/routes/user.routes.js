@@ -1,8 +1,19 @@
+// src/routes/user.routes.js
+
 const express = require("express");
 const router = express.Router();
-const { authenticateUser } = require("../middleware/auth");
+
+const { requireCommunity } = require("../middleware/auth");
 const { getMe } = require("../controllers/UserController");
 
-router.get("/me", authenticateUser, getMe);
+/* ============================================================
+   USER PROFILE (COMMUNITY ONLY)
+============================================================ */
+
+router.get(
+  "/me",
+  requireCommunity,
+  getMe
+);
 
 module.exports = router;

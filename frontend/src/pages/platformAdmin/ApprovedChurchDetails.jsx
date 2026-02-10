@@ -15,9 +15,9 @@ export default function ApprovedChurchDetails() {
   useEffect(() => {
     const loadChurch = async () => {
       try {
-          const data = await api(`/platform/churches/${churchId}`);
+        const data = await api(`/platform/churches/${churchId}`);
 
-        if (data?.church) {
+        if (data?.success) {
           setChurch(data.church);
         } else {
           setChurch(null);
@@ -35,13 +35,8 @@ export default function ApprovedChurchDetails() {
 
   /* ================= STATES ================= */
 
-  if (loading) {
-    return <p style={{ padding: 20 }}>Loading...</p>;
-  }
-
-  if (!church) {
-    return <p style={{ padding: 20 }}>Church not found</p>;
-  }
+  if (loading) return <p style={{ padding: 20 }}>Loading...</p>;
+  if (!church) return <p style={{ padding: 20 }}>Church not found</p>;
 
   /* ================= UI ================= */
 
@@ -51,9 +46,11 @@ export default function ApprovedChurchDetails() {
 
       <div className="dashboard-card large">
         <div className="details-header">
-          <h2>{church.cname}</h2>
-          <span className={`status-pill ${church.cstatus.toLowerCase()}`}>
-            {church.cstatus}
+          <h2>{church.chr_name}</h2>
+          <span
+            className={`status-pill ${church.chr_approval_status.toLowerCase()}`}
+          >
+            {church.chr_approval_status}
           </span>
         </div>
 
@@ -62,11 +59,11 @@ export default function ApprovedChurchDetails() {
           <div className="details-list">
             <div className="details-item">
               <label>Church Code</label>
-              <span>{church.ccode}</span>
+              <span>{church.chr_code}</span>
             </div>
             <div className="details-item">
               <label>Denomination</label>
-              <span>{church.cdenomination || "-"}</span>
+              <span>{church.chr_denomination || "-"}</span>
             </div>
           </div>
         </div>
@@ -76,23 +73,23 @@ export default function ApprovedChurchDetails() {
           <div className="details-list">
             <div className="details-item">
               <label>Address</label>
-              <span>{church.caddress || "-"}</span>
+              <span>{church.chr_address || "-"}</span>
             </div>
             <div className="details-item">
               <label>City</label>
-              <span>{church.ccity || "-"}</span>
+              <span>{church.chr_city || "-"}</span>
             </div>
             <div className="details-item">
               <label>State</label>
-              <span>{church.cstate || "-"}</span>
+              <span>{church.chr_state || "-"}</span>
             </div>
             <div className="details-item">
               <label>Country</label>
-              <span>{church.ccountry || "-"}</span>
+              <span>{church.chr_country || "-"}</span>
             </div>
             <div className="details-item">
               <label>Pincode</label>
-              <span>{church.cpincode || "-"}</span>
+              <span>{church.chr_pincode || "-"}</span>
             </div>
           </div>
         </div>

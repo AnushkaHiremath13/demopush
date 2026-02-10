@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../api/api";
 
-/* ================= DATE + AGING UTILITY ================= */
+/* ================= DATE + AGING ================= */
 
 function formatDateWithAging(dateString) {
   if (!dateString) return "-";
@@ -42,14 +42,14 @@ export default function Dashboard() {
 
     if (data?.success) {
       setStats({
-        totalChurches: data.totalchurches || 0,
-        activeChurches: data.activechurches || 0,
-        totalUsers: data.totalusers || 0,
+        totalChurches: data.totalChurches || 0,
+        activeChurches: data.activeChurches || 0,
+        totalUsers: data.totalUsers || 0,
       });
     }
   };
 
-  /* ================= PENDING CHURCHES ================= */
+  /* ================= PENDING CHURCH APPLICATIONS ================= */
 
   const loadPending = async () => {
     const data = await api("/platform/church-applicants");
@@ -74,8 +74,6 @@ export default function Dashboard() {
 
     init();
   }, []);
-
-  /* ================= LOADING ================= */
 
   if (loading) {
     return <p style={{ padding: 20 }}>Loading dashboard...</p>;
@@ -129,19 +127,19 @@ export default function Dashboard() {
 
           <tbody>
             {pendingChurches.map((church) => (
-              <tr key={church.application_id}>
-                <td>{church.ccode}</td>
-                <td>{church.cname}</td>
-                <td>{church.ccity || "-"}</td>
-                <td>{church.cstate || "-"}</td>
-                <td>{church.ccountry || "-"}</td>
-                <td>{formatDateWithAging(church.applied_on)}</td>
+              <tr key={church.chr_app_id}>
+                <td>{church.chr_app_code}</td>
+                <td>{church.chr_app_name}</td>
+                <td>{church.chr_app_city || "-"}</td>
+                <td>{church.chr_app_state || "-"}</td>
+                <td>{church.chr_app_country || "-"}</td>
+                <td>{formatDateWithAging(church.chr_app_applied_on)}</td>
                 <td className="actions">
                   <button
                     className="icon-btn"
                     title="View details"
                     onClick={() =>
-                      navigate(`/admin/church/application/${church.application_id}`)
+                      navigate(`/admin/church/application/${church.chr_app_id}`)
                     }
                   >
                     👁

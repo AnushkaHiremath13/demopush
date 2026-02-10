@@ -1,5 +1,6 @@
-import {  useState } from "react";
+import { useEffect, useState } from "react";
 import "../../styles/dashboard.css";
+import { api } from "../../api/api";
 
 export default function EmployeeAssignments() {
   const [assignments, setAssignments] = useState([]);
@@ -10,18 +11,13 @@ export default function EmployeeAssignments() {
 
   const [csvFile, setCsvFile] = useState(null);
   const [uploadResult, setUploadResult] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   /* ================= FETCH ASSIGNMENTS ================= */
 
   const fetchAssignments = async () => {
     try {
-      const res = await fetch("/api/platform/employee-assignments", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-
-      const data = await res.json();
+      const data = await api("/platform/employee-assignments");
       setAssignments(data.assignments || []);
     } catch (err) {
       console.error("Fetch assignments failed", err);
@@ -29,7 +25,17 @@ export default function EmployeeAssignments() {
     }
   };
 
-  
+  useEffect(() => {
+    const init = async () => {
+      try {
+        await fetchAssignments();
+      } finally {
+        setLoading(false);
+      }
+    };
+    init();
+  }, []);
+
   /* ================= ADD SINGLE ASSIGNMENT ================= */
 
   const handleAdd = async (e) => {
@@ -37,28 +43,17 @@ export default function EmployeeAssignments() {
     if (!email || !phone || !cid) return;
 
     try {
-      const res = await fetch("/api/platform/employee-assignments", {
+      await api("/platform/employee-assignments", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ email, phone, cid }),
+        body: { email, phone, cid },
       });
 
-      if (!res.ok) {
-        alert("Failed to assign employee");
-        return;
-      }
-
       await fetchAssignments();
-
       setEmail("");
       setPhone("");
       setCid("");
     } catch (err) {
-      console.error("Assign employee error", err);
-      alert("Something went wrong");
+      alert(err.message || "Failed to assign employee");
     }
   };
 
@@ -71,32 +66,27 @@ export default function EmployeeAssignments() {
     formData.append("file", csvFile);
 
     try {
-      const res = await fetch(
-        "/api/platform/employee-assignments/bulk",
+      const data = await api(
+        "/platform/employee-assignments/bulk",
         {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
           body: formData,
         }
       );
 
-      if (!res.ok) {
-        alert("CSV upload failed");
-        return;
-      }
-
-      const data = await res.json();
       setUploadResult(data);
-
       await fetchAssignments();
       setCsvFile(null);
     } catch (err) {
-      console.error("CSV upload error", err);
-      alert("CSV upload error");
+      alert(err.message || "CSV upload failed");
     }
   };
+
+  /* ================= LOADING ================= */
+
+  if (loading) {
+    return <p style={{ padding: 20 }}>Loading assignments...</p>;
+  }
 
   /* ================= UI ================= */
 
@@ -173,25 +163,24 @@ export default function EmployeeAssignments() {
             </tr>
           </thead>
           <tbody>
-  {assignments.map((a) => (
-    <tr key={a.eid}>
-      <td>{a.eid}</td>
-      <td>{a.email}</td>
-      <td>{a.phone}</td>
-      <td>{a.ccode}</td>
-      <td>{a.status}</td>
-    </tr>
-  ))}
+            {assignments.map((a) => (
+              <tr key={a.eid}>
+                <td>{a.eid}</td>
+                <td>{a.email}</td>
+                <td>{a.phone}</td>
+                <td>{a.ccode}</td>
+                <td>{a.status}</td>
+              </tr>
+            ))}
 
-  {assignments.length === 0 && (
-    <tr>
-      <td colSpan="5" style={{ textAlign: "center" }}>
-        No assignments found
-      </td>
-    </tr>
-  )}
-</tbody>
-
+            {assignments.length === 0 && (
+              <tr>
+                <td colSpan="5" style={{ textAlign: "center" }}>
+                  No assignments found
+                </td>
+              </tr>
+            )}
+          </tbody>
         </table>
       </div>
     </div>

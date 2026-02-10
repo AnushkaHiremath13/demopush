@@ -1,30 +1,32 @@
-// src/controllers/auth.controller.js
+// src/controllers/AuthController.js
 
-const { registerUser, loginUser } = require("../services/auth.service");
+const {
+  registerUser,
+  loginUser,
+} = require("../services/AuthService");
 
 /* ============================================================
-   REGISTER
+   REGISTER (COMMUNITY USER ONLY)
 ============================================================ */
 
 async function register(req, res) {
   try {
     const {
-      uname,
-      uemail,
-      uphone,
-      upassword,
-      uconfirmpassword,
-      ccode,
+      usr_name,
+      usr_email,
+      usr_phone,
+      usr_password,
+      usr_confirm_password,
     } = req.body;
 
-    if (!uname || !uemail || !upassword || !uconfirmpassword) {
+    if (!usr_name || !usr_email || !usr_password || !usr_confirm_password) {
       return res.status(400).json({
         success: false,
         message: "Required fields are missing",
       });
     }
 
-    if (upassword !== uconfirmpassword) {
+    if (usr_password !== usr_confirm_password) {
       return res.status(400).json({
         success: false,
         message: "Passwords do not match",
@@ -32,11 +34,10 @@ async function register(req, res) {
     }
 
     const user = await registerUser({
-      uname,
-      uemail,
-      upassword,
-      uphone,
-      ccode,
+      usr_name,
+      usr_email,
+      usr_phone,
+      usr_password,
     });
 
     return res.status(201).json({
@@ -53,64 +54,54 @@ async function register(req, res) {
 }
 
 /* ============================================================
-   LOGIN
+   LOGIN (COMMUNITY | PLATFORM)
 ============================================================ */
-
 async function login(req, res) {
   try {
-    const { uemail, upassword } = req.body;
+    const { email, password, login_scope } = req.body;
 
-    if (!uemail || !upassword) {
+    console.log("🔥 LOGIN SERVICE HIT 🔥", req.body);
+
+    if (!email || !password || !login_scope) {
       return res.status(400).json({
         success: false,
-        message: "Email and password are required",
+        message: "Email, password, and login scope are required",
       });
     }
 
-    const { token, userType, redirectTo } =
-      await loginUser({ uemail, upassword });
+    const result = await loginUser({
+      email,
+      password,
+      login_scope,
+    });
 
     return res.status(200).json({
       success: true,
       message: "Login successful",
-      token,
-      userType,
-      redirectTo,
+      token: result.token,
+      scope: result.scope,
+      identity: result.identity,
     });
-  } catch (error) {
-    /* 🔐 AUTH vs AUTHZ vs BUSINESS RULE */
-    let statusCode = 401;
-
-    if (
-      error.message.includes("pending") ||
-      error.message.includes("not linked") ||
-      error.message.includes("not authorized")
-    ) {
-      statusCode = 403;
-    }
-
-    return res.status(statusCode).json({
+  } catch (err) {
+    return res.status(401).json({
       success: false,
-      message: error.message,
+      message: err.message,
     });
   }
 }
+
+
 
 /* ============================================================
    LOGOUT
 ============================================================ */
 
-async function logout(req, res) {
-  // Stateless JWT logout (client removes token)
+function logout(req, res) {
   return res.status(200).json({
     success: true,
     message: "Logout successful",
   });
 }
-
-/* ============================================================
-   EXPORTS
-============================================================ */
 
 module.exports = {
   register,

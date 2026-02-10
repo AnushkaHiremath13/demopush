@@ -3,85 +3,62 @@
 const prisma = require("../config/prisma");
 
 /* ============================================================
-   CHECK AUTHORIZED HANDLER
-   (platform-created, approved church authority)
+   VERIFY CHURCH ADMIN PRIVILEGE
 ============================================================ */
 
-async function isAuthorizedHandler({ handlerUid, cid }) {
-  const record = await prisma.tblchurch_user.findFirst({
+async function assertChurchAdmin(chr_id, adminUsrId) {
+  const adminRole = await prisma.tbl_church_user.findFirst({
     where: {
-      uid: handlerUid,
-      cid,
-      approvalstatus: "APPROVED",
-      createdby: {
-        in: (
-          await prisma.tbluser1.findMany({
-            where: { uisplatform: true },
-            select: { uid: true },
-          })
-        ).map((u) => u.uid),
+      chr_id,
+      usr_id: adminUsrId,
+      chr_usr_status: "ACTIVE",
+      role: {
+        role_code: {
+          in: ["ADMIN", "EMPLOYEE"],
+        },
       },
     },
-    select: { uid: true },
+    include: {
+      role: true,
+    },
   });
 
-  return !!record;
+  if (!adminRole) {
+    throw new Error("Not authorized to manage followers for this church");
+  }
 }
 
 /* ============================================================
    GET PENDING FOLLOWERS
 ============================================================ */
 
-async function getPendingFollowers({ handlerUid }) {
-  /* 1️⃣ Find church of handler */
-  const handlerChurch = await prisma.tblchurch_user.findFirst({
+async function getPendingFollowers(chr_id, adminUsrId) {
+  await assertChurchAdmin(chr_id, adminUsrId);
+
+  const followers = await prisma.tbl_church_user.findMany({
     where: {
-      uid: handlerUid,
-      approvalstatus: "APPROVED",
-    },
-    select: {
-      cid: true,
-    },
-  });
-
-  if (!handlerChurch) {
-    throw new Error("User is not linked to any church");
-  }
-
-  const { cid } = handlerChurch;
-
-  /* 2️⃣ Verify authority */
-  const authorized = await isAuthorizedHandler({ handlerUid, cid });
-  if (!authorized) {
-    throw new Error("Not authorized to approve followers");
-  }
-
-  /* 3️⃣ Fetch pending followers */
-  const followers = await prisma.tblchurch_user.findMany({
-    where: {
-      cid,
-      approvalstatus: "PENDING",
+      chr_id,
+      chr_usr_status: "PENDING",
     },
     include: {
-      tbluser1: {
+      user: {
         select: {
-          uid: true,
-          uname: true,
-          uemail: true,
+          usr_id: true,
+          usr_name: true,
+          usr_email: true,
         },
       },
     },
     orderBy: {
-      createdat: "asc",
+      chr_usr_created_at: "asc",
     },
   });
 
-  /* 4️⃣ Shape response like original SQL */
   return followers.map((f) => ({
-    uid: f.tbluser1.uid,
-    uname: f.tbluser1.uname,
-    uemail: f.tbluser1.uemail,
-    createdat: f.createdat,
+    usr_id: f.user.usr_id,
+    usr_name: f.user.usr_name,
+    usr_email: f.user.usr_email,
+    requested_at: f.chr_usr_created_at,
   }));
 }
 
@@ -89,101 +66,85 @@ async function getPendingFollowers({ handlerUid }) {
    APPROVE FOLLOWER
 ============================================================ */
 
-async function approveFollower({ handlerUid, followerUid }) {
-  /* 1️⃣ Find handler church */
-  const handlerChurch = await prisma.tblchurch_user.findFirst({
-    where: {
-      uid: handlerUid,
-      approvalstatus: "APPROVED",
-    },
-    select: {
-      cid: true,
-    },
+async function approveFollower(chr_id, usr_id, adminUsrId) {
+  return prisma.$transaction(async (tx) => {
+    await assertChurchAdmin(chr_id, adminUsrId);
+
+    const record = await tx.tbl_church_user.findFirst({
+      where: {
+        chr_id,
+        usr_id,
+        chr_usr_status: "PENDING",
+      },
+    });
+
+    if (!record) {
+      throw new Error("Follower not found or already processed");
+    }
+
+    await tx.tbl_church_user.update({
+      where: { chr_usr_id: record.chr_usr_id },
+      data: {
+        chr_usr_status: "ACTIVE",
+        chr_usr_created_by: adminUsrId,
+      },
+    });
+
+    await tx.tbl_audit.create({
+      data: {
+        adt_tenant_scope: "CHURCH",
+        chr_id,
+        adt_entity_type: "CHURCH_USER",
+        adt_entity_id: usr_id,
+        adt_action: "APPROVE_FOLLOWER",
+        adt_actor_usr_id: adminUsrId,
+        adt_actor_context: "CHURCH_ADMIN",
+      },
+    });
   });
-
-  if (!handlerChurch) {
-    throw new Error("User is not linked to any church");
-  }
-
-  const { cid } = handlerChurch;
-
-  /* 2️⃣ Verify authority */
-  const authorized = await isAuthorizedHandler({ handlerUid, cid });
-  if (!authorized) {
-    throw new Error("Not authorized to approve followers");
-  }
-
-  /* 3️⃣ Approve follower */
-  const result = await prisma.tblchurch_user.updateMany({
-    where: {
-      uid: followerUid,
-      cid,
-      approvalstatus: "PENDING",
-    },
-    data: {
-      approvalstatus: "APPROVED",
-      createdby: handlerUid,
-    },
-  });
-
-  if (result.count === 0) {
-    throw new Error("Follower not found or already processed");
-  }
-
-  return { uid: followerUid };
 }
 
 /* ============================================================
    REJECT FOLLOWER
 ============================================================ */
 
-async function rejectFollower({ handlerUid, followerUid }) {
-  /* 1️⃣ Find handler church */
-  const handlerChurch = await prisma.tblchurch_user.findFirst({
-    where: {
-      uid: handlerUid,
-      approvalstatus: "APPROVED",
-    },
-    select: {
-      cid: true,
-    },
+async function rejectFollower(chr_id, usr_id, adminUsrId) {
+  return prisma.$transaction(async (tx) => {
+    await assertChurchAdmin(chr_id, adminUsrId);
+
+    const record = await tx.tbl_church_user.findFirst({
+      where: {
+        chr_id,
+        usr_id,
+        chr_usr_status: "PENDING",
+      },
+    });
+
+    if (!record) {
+      throw new Error("Follower not found or already processed");
+    }
+
+    await tx.tbl_church_user.update({
+      where: { chr_usr_id: record.chr_usr_id },
+      data: {
+        chr_usr_status: "REJECTED",
+        chr_usr_created_by: adminUsrId,
+      },
+    });
+
+    await tx.tbl_audit.create({
+      data: {
+        adt_tenant_scope: "CHURCH",
+        chr_id,
+        adt_entity_type: "CHURCH_USER",
+        adt_entity_id: usr_id,
+        adt_action: "REJECT_FOLLOWER",
+        adt_actor_usr_id: adminUsrId,
+        adt_actor_context: "CHURCH_ADMIN",
+      },
+    });
   });
-
-  if (!handlerChurch) {
-    throw new Error("User is not linked to any church");
-  }
-
-  const { cid } = handlerChurch;
-
-  /* 2️⃣ Verify authority */
-  const authorized = await isAuthorizedHandler({ handlerUid, cid });
-  if (!authorized) {
-    throw new Error("Not authorized to reject followers");
-  }
-
-  /* 3️⃣ Reject follower */
-  const result = await prisma.tblchurch_user.updateMany({
-    where: {
-      uid: followerUid,
-      cid,
-      approvalstatus: "PENDING",
-    },
-    data: {
-      approvalstatus: "REJECTED",
-      createdby: handlerUid,
-    },
-  });
-
-  if (result.count === 0) {
-    throw new Error("Follower not found or already processed");
-  }
-
-  return { uid: followerUid };
 }
-
-/* ============================================================
-   EXPORTS
-============================================================ */
 
 module.exports = {
   getPendingFollowers,

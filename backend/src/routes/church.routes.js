@@ -1,9 +1,7 @@
-// src/routes/church.routes.js (example)
-
 const express = require("express");
 const router = express.Router();
 
-const { authenticateUser } = require("../middleware/auth");
+const { requireCommunity } = require("../middleware/auth");
 
 const {
   pending,
@@ -15,28 +13,33 @@ const {
   createChurchApplicant,
 } = require("../controllers/ChurchApplicantController");
 
-// ✅ PUBLIC – NO AUTH
+/* ============================================================
+   PUBLIC – CHURCH APPLICATION
+============================================================ */
+
 router.post("/apply", createChurchApplicant);
 
 /* ============================================================
-   FOLLOWER APPROVAL ROUTES (CHURCH AUTHORITY)
+   FOLLOWER APPROVAL ROUTES (CHURCH ADMIN)
+   Scope: COMMUNITY
+   Church is resolved from logged-in user
 ============================================================ */
 
 router.get(
   "/followers/pending",
-  authenticateUser,
+  requireCommunity,
   pending
 );
 
 router.patch(
-  "/followers/:uid/approve",
-  authenticateUser,
+  "/followers/:userId/approve",
+  requireCommunity,
   approve
 );
 
 router.patch(
-  "/followers/:uid/reject",
-  authenticateUser,
+  "/followers/:userId/reject",
+  requireCommunity,
   reject
 );
 

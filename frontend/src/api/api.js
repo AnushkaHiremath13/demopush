@@ -2,15 +2,7 @@
    🌐 API BASE
    ===================================================== */
 
-// ✅ SAME for local + VPS (proxy handles local)
 const BASE_URL = "/api";
-
-/*
-🧪 LOCAL DIRECT BACKEND (COMMENTED)
-Use only if NOT using Vite proxy.
-
-const BASE_URL = "http://localhost:5000/api";
-*/
 
 /* =====================================================
    🔗 API HELPER
@@ -18,48 +10,49 @@ const BASE_URL = "http://localhost:5000/api";
 
 export async function api(endpoint, options = {}) {
   const token = localStorage.getItem("token");
+  const isFormData = options.body instanceof FormData;
 
   try {
     const res = await fetch(`${BASE_URL}${endpoint}`, {
-      ...options,
+      method: options.method || "GET",
       headers: {
-        "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
+        ...(isFormData ? {} : { "Content-Type": "application/json" }),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(options.headers || {}),
       },
+      body: isFormData
+        ? options.body
+        : options.body
+        ? JSON.stringify(options.body)
+        : undefined,
     });
-
-    // 🔐 Unauthorized → force logout
-    if (res.status === 401) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      window.location.href = "/"; // sub-path safe
-      return;
-    }
 
     let data = {};
     try {
       data = await res.json();
     } catch {
-      // Non-JSON response (204 / HTML / empty body)
+      // non-JSON response (allowed)
     }
+
+    /* ================= AUTH FAIL ================= */
+
+    if (res.status === 401) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("scope");
+
+      // ⛔ IMPORTANT: THROW, NOT RETURN
+      throw new Error(data.message || "Unauthorized");
+    }
+
+    /* ================= OTHER ERRORS ================= */
 
     if (!res.ok) {
       throw new Error(data.message || `API Error (${res.status})`);
     }
 
     return data;
-
   } catch (err) {
-    console.error("❌ API REQUEST FAILED:", {
-      endpoint,
-      message: err.message,
-    });
-
-    // Optional: user-friendly message
-    throw new Error(
-      err.message ||
-      "Unable to connect to server. Please try again later."
-    );
+    console.error("❌ API REQUEST FAILED:", endpoint, err.message);
+    throw err;
   }
 }

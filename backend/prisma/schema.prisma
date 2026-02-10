@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -8,117 +7,227 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model tblchurch {
-  cid               String           @id @default(uuid()) @db.Uuid   // ✅ FIX 1
-  ccode             String           @unique @db.VarChar(50)
-  cname             String           @db.VarChar(150)
-  cemail            String?          @db.VarChar(255)                 // ✅ FIX 2
-  caddress          String?
-  ccity             String?          @db.VarChar(100)
-  cstate            String?          @db.VarChar(100)
-  ccountry          String?          @db.VarChar(100)
-  cpincode          String?          @db.VarChar(20)
-  cdenomination     String?          @db.VarChar(100)
-  clocation         String?
-  ctimezone         String?          @db.VarChar(50)
-  csubscriptionplan String?          @db.VarChar(50)
-  cstatus           String?          @default("ACTIVE") @db.VarChar(20)
-  approvalstatus    String?          @default("APPROVED") @db.VarChar(20)
-  approvedby        String?          @db.Uuid
-  approvedat        DateTime?        @db.Timestamp(6)
-  createdat         DateTime?        @default(now()) @db.Timestamp(6)
-  createdby         String?          @db.Uuid
-  tblchurch_user    tblchurch_user[]
+//////////////////////////////////////////////////////
+// 1️⃣ ROLE MASTER
+//////////////////////////////////////////////////////
+
+model tbl_role_master {
+  role_id          Int      @id @default(autoincrement())
+  role_code        String   @unique @db.VarChar(50)
+  role_desc        String?  @db.VarChar(150)
+  role_created_at  DateTime @default(now())
+
+  church_users     tbl_church_user[]
+  platform_users   tbl_platform_user[]
+}
+
+//////////////////////////////////////////////////////
+// 2️⃣ COMMUNITY USER — CORE
+//////////////////////////////////////////////////////
+
+model tbl_user_1 {
+  usr_id             String   @id @default(uuid()) @db.Uuid
+  usr_name           String   @db.VarChar(150)
+  usr_email          String   @unique @db.VarChar(255)
+  usr_phone          String?  @unique @db.VarChar(20)
+  usr_password       String   @db.Text
+
+  usr_status         String   @default("ACTIVE") @db.VarChar(20)
+  usr_email_verified Boolean  @default(false)
+  usr_phone_verified Boolean  @default(false)
+
+  usr_created_at     DateTime @default(now())
+  usr_created_by     String?  @db.Uuid
+
+  profile            tbl_user_2?
+  church_users       tbl_church_user[]
+}
+
+//////////////////////////////////////////////////////
+// 3️⃣ COMMUNITY USER — PROFILE
+//////////////////////////////////////////////////////
+
+model tbl_user_2 {
+  usr_id             String   @id @db.Uuid
+  usr_address        String?  @db.Text
+  usr_city           String?  @db.VarChar(100)
+  usr_state          String?  @db.VarChar(100)
+  usr_country        String?  @db.VarChar(100)
+  usr_pincode        String?  @db.VarChar(20)
+  usr_gender         String?  @db.VarChar(20)
+  usr_dob            DateTime?
+  usr_profile_image  String?  @db.Text
+
+  usr_created_at     DateTime @default(now())
+  usr_created_by     String?  @db.Uuid
+
+  user tbl_user_1 @relation(fields: [usr_id], references: [usr_id], onDelete: Cascade)
+}
+
+//////////////////////////////////////////////////////
+// 4️⃣ PLATFORM ADMIN — CORE
+//////////////////////////////////////////////////////
+
+model tbl_platform_1 {
+  plt_id             String   @id @default(uuid()) @db.Uuid
+  plt_name           String   @db.VarChar(150)
+  plt_email          String   @unique @db.VarChar(255)
+  plt_phone          String?  @unique @db.VarChar(20)
+  plt_password       String   @db.Text
+
+  plt_status         String   @default("ACTIVE") @db.VarChar(20)
+  plt_email_verified Boolean  @default(false)
+  plt_phone_verified Boolean  @default(false)
+
+  plt_created_at     DateTime @default(now())
+  plt_created_by     String?  @db.Uuid
+
+  profile            tbl_platform_2?
+  platform_roles     tbl_platform_user[]
+  approved_churches  tbl_church[]
+  approved_apps      tbl_church_applicants[]
+}
+
+//////////////////////////////////////////////////////
+// 5️⃣ PLATFORM ADMIN — PROFILE
+//////////////////////////////////////////////////////
+
+model tbl_platform_2 {
+  plt_id             String   @id @db.Uuid
+  plt_address        String?  @db.Text
+  plt_city           String?  @db.VarChar(100)
+  plt_state          String?  @db.VarChar(100)
+  plt_country        String?  @db.VarChar(100)
+  plt_pincode        String?  @db.VarChar(20)
+  plt_gender         String?  @db.VarChar(20)
+  plt_dob            DateTime?
+  plt_profile_image  String?  @db.Text
+
+  plt_created_at     DateTime @default(now())
+  plt_created_by     String?  @db.Uuid
+
+  platform tbl_platform_1 @relation(fields: [plt_id], references: [plt_id], onDelete: Cascade)
+}
+
+//////////////////////////////////////////////////////
+// 6️⃣ CHURCH APPLICATIONS
+//////////////////////////////////////////////////////
+
+model tbl_church_applicants {
+  chr_app_id          String   @id @default(uuid()) @db.Uuid
+  chr_app_code        String?  @unique @db.Char(8)
+
+  chr_app_name        String?  @db.VarChar(150)
+  chr_app_email       String?  @db.VarChar(255)
+  chr_app_denomination String? @db.VarChar(100)
+  chr_app_location    String?  @db.Text
+  chr_app_timezone    String?  @db.VarChar(50)
+
+  chr_app_city        String?  @db.VarChar(100)
+  chr_app_state       String?  @db.VarChar(100)
+  chr_app_country     String?  @db.VarChar(100)
+  chr_app_pincode     String?  @db.VarChar(20)
+
+  chr_app_status      String   @default("PENDING") @db.VarChar(20)
+  chr_app_approved_by String?  @db.Uuid
+  chr_app_approved_at DateTime?
+
+  chr_app_applied_on  DateTime @default(now())
+
+  approver tbl_platform_1? @relation(fields: [chr_app_approved_by], references: [plt_id])
+}
+
+//////////////////////////////////////////////////////
+// 7️⃣ CHURCH
+//////////////////////////////////////////////////////
+
+model tbl_church {
+  chr_id               String   @id @default(uuid()) @db.Uuid
+  chr_code             String   @unique @db.VarChar(50)
+  chr_name             String   @db.VarChar(150)
+
+  chr_email            String?  @db.VarChar(255)
+  chr_denomination     String?  @db.VarChar(100)
+  chr_location         String?  @db.Text
+  chr_timezone         String?  @db.VarChar(50)
+  chr_subscription_plan String? @db.VarChar(50)
+
+  chr_approval_status  String   @default("PENDING") @db.VarChar(20)
+  chr_approved_by      String?  @db.Uuid
+  chr_approved_at      DateTime?
+
+  chr_address          String?  @db.Text
+  chr_city             String?  @db.VarChar(100)
+  chr_state            String?  @db.VarChar(100)
+  chr_country          String?  @db.VarChar(100)
+  chr_pincode          String?  @db.VarChar(20)
+
+  chr_created_at       DateTime @default(now())
+  chr_created_by       String?  @db.Uuid
+
+  approver      tbl_platform_1?   @relation(fields: [chr_approved_by], references: [plt_id])
+  church_users  tbl_church_user[]
+}
+
+//////////////////////////////////////////////////////
+// 8️⃣ CHURCH ↔ USER ROLE MAPPING
+//////////////////////////////////////////////////////
+
+model tbl_church_user {
+  chr_usr_id          Int      @id @default(autoincrement())
+  chr_id              String?  @db.Uuid
+  usr_id              String   @db.Uuid
+  role_id             Int
+
+  chr_usr_status      String   @default("ACTIVE") @db.VarChar(20)
+  chr_usr_created_at  DateTime @default(now())
+  chr_usr_created_by  String?  @db.Uuid
+
+  church tbl_church?     @relation(fields: [chr_id], references: [chr_id], onDelete: Cascade)
+  user   tbl_user_1      @relation(fields: [usr_id], references: [usr_id], onDelete: Cascade)
+  role   tbl_role_master @relation(fields: [role_id], references: [role_id])
+
+  @@unique([chr_id, usr_id, role_id])
 }
 
 
-model tblchurch_applicants {
-  application_id     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  ccode              String    @unique(map: "idx_tblchurch_applicants_ccode") @db.Char(8)
-  cname              String    @db.VarChar(150)
-  caddress           String?
-  ccity              String?   @db.VarChar(100)
-  cstate             String?   @db.VarChar(100)
-  ccountry           String?   @db.VarChar(100)
-  cpincode           String?   @db.VarChar(20)
-  cemail             String?   @db.VarChar(25)
-  cdenomination      String?   @db.VarChar(100)
-  clocation          String?
-  ctimezone          String?   @db.VarChar(50)
-  approved_at        DateTime? @db.Timestamp(6)
-  rejected_at        DateTime? @db.Timestamp(6)
-  application_status String?   @default("PENDING") @db.VarChar(20)
-  applied_on         DateTime? @default(dbgenerated("CURRENT_DATE")) @db.Date
+//////////////////////////////////////////////////////
+// 9️⃣ PLATFORM ↔ ROLE MAPPING
+//////////////////////////////////////////////////////
 
-  @@index([ccity], map: "idx_tblchurch_applicants_city")
-  @@index([cname], map: "idx_tblchurch_applicants_cname")
-  @@index([cstate], map: "idx_tblchurch_applicants_state")
-  @@index([application_status], map: "idx_tblchurch_applicants_status")
-  @@index([application_status, applied_on], map: "idx_tblchurch_applicants_status_appliedon")
+model tbl_platform_user {
+  plt_usr_id          Int      @id @default(autoincrement())
+  plt_id              String   @db.Uuid
+  role_id             Int
+
+  plt_usr_created_at  DateTime @default(now())
+
+  platform tbl_platform_1  @relation(fields: [plt_id], references: [plt_id], onDelete: Cascade)
+  role     tbl_role_master @relation(fields: [role_id], references: [role_id])
+
+  @@unique([plt_id, role_id])
 }
 
-model tblchurch_user {
-  uid            String    @db.Uuid
-  cid            String    @db.Uuid
-  approvalstatus String?   @default("PENDING") @db.VarChar(20)
-  status         String?   @default("ACTIVE") @db.VarChar(20)
-  createdat      DateTime? @default(now()) @db.Timestamp(6)
-  createdby      String?   @db.Uuid
-  tblchurch      tblchurch @relation(fields: [cid], references: [cid], onDelete: Cascade, onUpdate: NoAction, map: "fk_church_user_church")
-  tbluser1       tbluser1  @relation(fields: [uid], references: [uid], onDelete: Cascade, onUpdate: NoAction, map: "fk_church_user_user")
+//////////////////////////////////////////////////////
+// 🔟 AUDIT LOGS
+//////////////////////////////////////////////////////
 
-  @@id([uid, cid], map: "pk_church_user")
-  @@index([cid], map: "idx_church_user_cid")
-  @@index([uid], map: "idx_church_user_uid")
-}
+model tbl_audit {
+  adt_id              String   @id @default(uuid()) @db.Uuid
 
-model tbluser1 {
-  uid            String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  uname          String           @db.VarChar(150)
-  uemail         String           @unique(map: "idx_tbluser1_uemail") @db.VarChar(255)
-  uphone         String?          @db.VarChar(20)
-  upassword      String
-  ccode          String?          @db.VarChar(50)
-  uisplatform    Boolean          @default(false)
-  uisemployee    Boolean          @default(false)
-  uisfollower    Boolean          @default(true)
-  ustatus        String           @default("ACTIVE") @db.VarChar(20)
-  uemailverified Boolean          @default(false)
-  uphoneverified Boolean          @default(false)
-  createdat      DateTime         @default(now()) @db.Timestamp(6)
-  createdby      String?          @db.Uuid
-  tblchurch_user tblchurch_user[]
-  tbluser2       tbluser2?
+  adt_tenant_scope    String   @db.VarChar(20)
+  chr_id              String?  @db.Uuid
 
-  @@index([ccode], map: "idx_tbluser1_ccode")
-  @@index([ccode, uisemployee, uisfollower], map: "idx_tbluser1_ccode_role")
-}
+  adt_entity_type     String   @db.VarChar(50)
+  adt_entity_id       String   @db.Uuid
+  adt_action          String   @db.VarChar(50)
 
-model tbluser2 {
-  uid           String    @id @db.Uuid
-  uname         String    @db.VarChar(150)
-  uemail        String    @db.VarChar(255)
-  uaddress      String?
-  ucity         String?   @db.VarChar(100)
-  ustate        String?   @db.VarChar(100)
-  ucountry      String?   @db.VarChar(100)
-  upincode      String?   @db.VarChar(20)
-  uprofileimage String?
-  ugender       String?   @db.VarChar(20)
-  udob          DateTime? @db.Date
-  createdat     DateTime  @default(now()) @db.Timestamp(6)
-  createdby     String?   @db.Uuid
-  tbluser1      tbluser1  @relation(fields: [uid], references: [uid], onDelete: Cascade, onUpdate: NoAction, map: "fk_tbluser2_user")
-}
+  adt_actor_usr_id    String?  @db.Uuid
+  adt_actor_context   String?  @db.VarChar(50)
 
-model employee_assignments {
-  eid        Int      @id @default(autoincrement())
-  email      String
-  phone      String
-  ccode      String
-  status     String   @default("INVITED")
-  createdat  DateTime @default(now())
+  adt_ip_address      String?  @db.Text
+  adt_old_data        Json?
+  adt_new_data        Json?
 
-  @@unique([email, ccode])
-  @@map("tblemployee_assignments")
+  adt_created_at      DateTime @default(now())
 }
