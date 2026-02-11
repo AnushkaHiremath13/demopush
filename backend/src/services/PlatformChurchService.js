@@ -25,7 +25,6 @@ async function getAllChurches() {
     },
   });
 
-  // Audit (list view → synthetic UUID)
   await prisma.tbl_audit.create({
     data: {
       adt_tenant_scope: "PLATFORM",
@@ -56,24 +55,31 @@ async function getChurchById(churchId) {
 }
 
 /* ============================================================
-   SUSPEND CHURCH (LIFECYCLE)
+   SUSPEND CHURCH
 ============================================================ */
 
 async function suspendChurch(churchId, platformAdminId) {
+  if (!platformAdminId) {
+    throw new Error("Platform admin ID is required");
+  }
+
   return prisma.$transaction(async (tx) => {
     const church = await tx.tbl_church.findUnique({
       where: { chr_id: churchId },
     });
 
-    if (!church || church.chr_approval_status !== "APPROVED") {
-      throw new Error("Church not found or not approved");
+    if (!church) {
+      throw new Error("Church not found");
     }
 
-    // NOTE: We keep approval status intact
+    if (church.chr_approval_status !== "APPROVED") {
+      throw new Error("Only approved churches can be suspended");
+    }
+
     await tx.tbl_church.update({
       where: { chr_id: churchId },
       data: {
-        chr_approval_status: "APPROVED",
+        chr_approval_status: "SUSPENDED",
       },
     });
 
@@ -88,6 +94,8 @@ async function suspendChurch(churchId, platformAdminId) {
         adt_actor_context: "PLATFORM",
       },
     });
+
+    return { message: "Church suspended successfully" };
   });
 }
 
@@ -96,16 +104,30 @@ async function suspendChurch(churchId, platformAdminId) {
 ============================================================ */
 
 async function activateChurch(churchId, platformAdminId) {
+  if (!platformAdminId) {
+    throw new Error("Platform admin ID is required");
+  }
+
   return prisma.$transaction(async (tx) => {
     const church = await tx.tbl_church.findUnique({
       where: { chr_id: churchId },
     });
 
-    if (!church || church.chr_approval_status !== "APPROVED") {
-      throw new Error("Church not found or not approved");
+    if (!church) {
+      throw new Error("Church not found");
     }
 
-    // No-op lifecycle reactivation (approval remains APPROVED)
+    if (church.chr_approval_status !== "SUSPENDED") {
+      throw new Error("Only suspended churches can be activated");
+    }
+
+    await tx.tbl_church.update({
+      where: { chr_id: churchId },
+      data: {
+        chr_approval_status: "APPROVED",
+      },
+    });
+
     await tx.tbl_audit.create({
       data: {
         adt_tenant_scope: "PLATFORM",
@@ -117,14 +139,20 @@ async function activateChurch(churchId, platformAdminId) {
         adt_actor_context: "PLATFORM",
       },
     });
+
+    return { message: "Church activated successfully" };
   });
 }
 
 /* ============================================================
-   ASSIGN CHURCH AUTHORITY (ADMIN ROLE)
+   ASSIGN CHURCH AUTHORITY
 ============================================================ */
 
 async function assignChurchAuthority({ churchId, email, platformAdminId }) {
+  if (!platformAdminId) {
+    throw new Error("Platform admin ID is required");
+  }
+
   return prisma.$transaction(async (tx) => {
     const user = await tx.tbl_user_1.findUnique({
       where: { usr_email: email.toLowerCase() },

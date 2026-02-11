@@ -23,7 +23,7 @@ export default function Login() {
     });
   };
 
-  /* ================= LOGIN ================= */
+  /* ================= PLATFORM LOGIN ================= */
 
   const handleLogin = async () => {
     if (!formData.email || !formData.password) {
@@ -34,21 +34,20 @@ export default function Login() {
     try {
       setLoading(true);
 
+      // 🔥 PLATFORM LOGIN — NO SCOPE, NO FLAGS
       const res = await api("/auth/login", {
         method: "POST",
         body: {
           email: formData.email,
           password: formData.password,
-          login_scope: "PLATFORM", // 🔥 IMPORTANT
         },
       });
 
-      // ✅ STORE TOKEN
+      // ✅ STORE ONLY TOKEN
       localStorage.setItem("token", res.token);
-      localStorage.setItem("scope", res.scope);
 
-      // ✅ REDIRECT
-      navigate("/admin/dashboard");
+      // ✅ REDIRECT TO PLATFORM DASHBOARD
+      navigate("/platform/dashboard");
     } catch (err) {
       alert(err.message || "Login failed");
     } finally {

@@ -71,7 +71,13 @@ async function getChurchByIdController(req, res) {
 async function suspend(req, res) {
   try {
     const { churchId } = req.params;
-    const platformAdminId = req.platform.plt_id;
+
+    if (!req.user || !req.user.plt_id) {
+      return res.status(403).json({
+        success: false,
+        message: "Platform authentication required",
+      });
+    }
 
     if (!churchId) {
       return res.status(400).json({
@@ -79,6 +85,8 @@ async function suspend(req, res) {
         message: "Church ID is required",
       });
     }
+
+    const platformAdminId = req.user.plt_id;
 
     await suspendChurch(churchId, platformAdminId);
 
@@ -87,21 +95,13 @@ async function suspend(req, res) {
       message: "Church suspended successfully",
     });
   } catch (error) {
-    console.error("❌ suspendChurch error:", error.message);
-
-    const status =
-      error.message.toLowerCase().includes("not authorized")
-        ? 403
-        : error.message.toLowerCase().includes("not found")
-        ? 404
-        : 400;
-
-    return res.status(status).json({
+    return res.status(400).json({
       success: false,
       message: error.message,
     });
   }
 }
+
 
 /* ============================================================
    ACTIVATE CHURCH (PLATFORM)
@@ -110,7 +110,13 @@ async function suspend(req, res) {
 async function activate(req, res) {
   try {
     const { churchId } = req.params;
-    const platformAdminId = req.platform.plt_id;
+
+    if (!req.user || !req.user.plt_id) {
+      return res.status(403).json({
+        success: false,
+        message: "Platform authentication required",
+      });
+    }
 
     if (!churchId) {
       return res.status(400).json({
@@ -119,6 +125,8 @@ async function activate(req, res) {
       });
     }
 
+    const platformAdminId = req.user.plt_id;
+
     await activateChurch(churchId, platformAdminId);
 
     return res.status(200).json({
@@ -126,13 +134,11 @@ async function activate(req, res) {
       message: "Church activated successfully",
     });
   } catch (error) {
-    console.error("❌ activateChurch error:", error.message);
-
     const status =
-      error.message.toLowerCase().includes("not authorized")
-        ? 403
-        : error.message.toLowerCase().includes("not found")
+      error.message.toLowerCase().includes("not found")
         ? 404
+        : error.message.toLowerCase().includes("authorized")
+        ? 403
         : 400;
 
     return res.status(status).json({
@@ -145,12 +151,17 @@ async function activate(req, res) {
 /* ============================================================
    ASSIGN CHURCH AUTHORITY (PLATFORM)
 ============================================================ */
-
 async function assignAuthority(req, res) {
   try {
     const { churchId } = req.params;
     const { email } = req.body;
-    const platformAdminId = req.platform.plt_id;
+
+    if (!req.user || !req.user.plt_id) {
+      return res.status(403).json({
+        success: false,
+        message: "Platform authentication required",
+      });
+    }
 
     if (!churchId || !email) {
       return res.status(400).json({
@@ -158,6 +169,8 @@ async function assignAuthority(req, res) {
         message: "Church ID and user email are required",
       });
     }
+
+    const platformAdminId = req.user.plt_id;
 
     const result = await assignChurchAuthority({
       churchId,
@@ -171,13 +184,11 @@ async function assignAuthority(req, res) {
       data: result,
     });
   } catch (error) {
-    console.error("❌ assignAuthority error:", error.message);
-
     const status =
-      error.message.toLowerCase().includes("not authorized")
-        ? 403
-        : error.message.toLowerCase().includes("not found")
+      error.message.toLowerCase().includes("not found")
         ? 404
+        : error.message.toLowerCase().includes("authorized")
+        ? 403
         : 400;
 
     return res.status(status).json({

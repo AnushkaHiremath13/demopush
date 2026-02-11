@@ -39,24 +39,26 @@ async function getApplicationById(applicationId) {
 
 async function createApplication(data) {
   const {
-    churchCode,
-    churchName,
-    email,              // ✅ ACCEPT email directly
-    denomination,
-    location,
-    timezone,
-    city,
-    state,
-    country,
-    pincode,
+    chr_app_code,
+    chr_app_name,
+    chr_app_email,
+    chr_app_denomination,
+    chr_app_location,
+    chr_app_timezone,
+    chr_app_city,
+    chr_app_state,
+    chr_app_country,
+    chr_app_pincode,
   } = data;
 
-  if (!churchCode || !churchName) {
+  if (!chr_app_code || !chr_app_name) {
     throw new Error("Church code and name are required");
   }
 
-  const code = churchCode.toUpperCase();
-  const normalizedEmail = email ? email.toLowerCase() : null;
+  const code = chr_app_code.toUpperCase();
+  const normalizedEmail = chr_app_email
+    ? chr_app_email.toLowerCase()
+    : null;
 
   const existingApp = await prisma.tbl_church_applicants.findFirst({
     where: { chr_app_code: code },
@@ -77,15 +79,16 @@ async function createApplication(data) {
   const application = await prisma.tbl_church_applicants.create({
     data: {
       chr_app_code: code,
-      chr_app_name: churchName,
-      chr_app_email: normalizedEmail, // ✅ WILL STORE EMAIL
-      chr_app_denomination: denomination,
-      chr_app_location: location,
-      chr_app_timezone: timezone,
-      chr_app_city: city,
-      chr_app_state: state,
-      chr_app_country: country,
-      chr_app_pincode: pincode,
+      chr_app_name,
+      chr_app_email: normalizedEmail,
+      chr_app_denomination,
+      chr_app_location,
+      chr_app_address: chr_app_location || null, // ✅ use location as address
+      chr_app_timezone,
+      chr_app_city,
+      chr_app_state,
+      chr_app_country,
+      chr_app_pincode,
       chr_app_status: "PENDING",
     },
   });
@@ -97,7 +100,6 @@ async function createApplication(data) {
 /* ============================================================
    APPROVE CHURCH APPLICATION (PLATFORM)
 ============================================================ */
-
 async function approveApplication(applicationId, platformAdminId) {
   return prisma.$transaction(async (tx) => {
     const application = await tx.tbl_church_applicants.findUnique({
@@ -123,6 +125,7 @@ async function approveApplication(applicationId, platformAdminId) {
         chr_email: application.chr_app_email,
         chr_denomination: application.chr_app_denomination,
         chr_location: application.chr_app_location,
+        chr_address: application.chr_app_address, // ✅ FIXED
         chr_timezone: application.chr_app_timezone,
         chr_city: application.chr_app_city,
         chr_state: application.chr_app_state,
@@ -143,21 +146,10 @@ async function approveApplication(applicationId, platformAdminId) {
       },
     });
 
-    await tx.tbl_audit.create({
-      data: {
-        adt_tenant_scope: "PLATFORM",
-        chr_id: church.chr_id,
-        adt_entity_type: "CHURCH",
-        adt_entity_id: church.chr_id,
-        adt_action: "APPROVE",
-        adt_actor_usr_id: platformAdminId,
-        adt_actor_context: "PLATFORM",
-      },
-    });
-
     return church;
   });
 }
+
 
 /* ============================================================
    REJECT CHURCH APPLICATION (PLATFORM)

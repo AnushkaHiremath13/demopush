@@ -85,14 +85,12 @@ async function approveChurchApplicant(req, res) {
   try {
     const { applicationId } = req.params;
 
-    if (!req.platform || !req.platform.plt_id) {
+    if (!req.user || !req.user.plt_id) {
       return res.status(401).json({
         success: false,
         message: "Platform authentication required",
       });
     }
-
-    const platformAdminId = req.platform.plt_id;
 
     if (!applicationId) {
       return res.status(400).json({
@@ -100,6 +98,8 @@ async function approveChurchApplicant(req, res) {
         message: "Application ID is required",
       });
     }
+
+    const platformAdminId = req.user.plt_id;
 
     await approveApplication(applicationId, platformAdminId);
 
@@ -129,7 +129,13 @@ async function approveChurchApplicant(req, res) {
 async function rejectChurchApplicant(req, res) {
   try {
     const { applicationId } = req.params;
-    const platformAdminId = req.platform.plt_id;
+
+    if (!req.user || !req.user.plt_id) {
+      return res.status(401).json({
+        success: false,
+        message: "Platform authentication required",
+      });
+    }
 
     if (!applicationId) {
       return res.status(400).json({
@@ -137,6 +143,8 @@ async function rejectChurchApplicant(req, res) {
         message: "Application ID is required",
       });
     }
+
+    const platformAdminId = req.user.plt_id;
 
     await rejectApplication(applicationId, platformAdminId);
 

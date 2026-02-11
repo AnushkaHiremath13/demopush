@@ -41,9 +41,16 @@ app.use(
    ROUTES
 ============================================================ */
 
+// COMMUNITY AUTH
 app.use(`${API_PREFIX}/auth`, authRoutes);
+
+// PLATFORM (login + protected routes)
 app.use(`${API_PREFIX}/platform`, platformRoutes);
+
+// COMMUNITY CHURCH ROUTES
 app.use(`${API_PREFIX}/church`, churchRoutes);
+
+// COMMUNITY USER ROUTES
 app.use(`${API_PREFIX}/user`, userRoutes);
 
 /* ============================================================
@@ -64,7 +71,6 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   console.error("Unhandled error:", err);
 
-  // Multer errors (file upload)
   if (err instanceof multer.MulterError) {
     return res.status(400).json({
       success: false,
@@ -72,7 +78,6 @@ app.use((err, req, res, next) => {
     });
   }
 
-  // Custom status if provided
   const status = err.statusCode || err.status || 500;
 
   res.status(status).json({

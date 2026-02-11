@@ -1,164 +1,164 @@
-import { useState } from "react";
-import { api } from "../api/api";
+// import { useState } from "react";
 
-export default function ChurchRegister() {
-  const [formData, setFormData] = useState({
-    code: "",
-    name: "",
-    email: "",
-    address: "",
-    city: "",
-    state: "",
-    country: "",
-    pincode: "",
-    denomination: "",
-    timezone: "Asia/Kolkata",
-  });
 
-  const [loading, setLoading] = useState(false);
+// export default function ChurchRegister() {
+//   const [formData, setFormData] = useState({
+//     code: "",
+//     name: "",
+//     email: "",
+//     address: "",
+//     city: "",
+//     state: "",
+//     country: "",
+//     pincode: "",
+//     denomination: "",
+//     timezone: "Asia/Kolkata",
+//   });
 
-  /* ================= HANDLE CHANGE ================= */
+//   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+//   /* ================= HANDLE CHANGE ================= */
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === "code" ? value.toUpperCase() : value,
-    }));
-  };
+//   const handleChange = (e) => {
+//     const { name, value } = e.target;
 
-  /* ================= SUBMIT ================= */
+//     setFormData((prev) => ({
+//       ...prev,
+//       [name]: name === "code" ? value.toUpperCase() : value,
+//     }));
+//   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+//   /* ================= SUBMIT ================= */
 
-    const {
-      code,
-      name,
-      email,
-      address,
-      city,
-      state,
-      country,
-      pincode,
-      denomination,
-      timezone,
-    } = formData;
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
 
-    if (!code || !name || !email) {
-      alert("Church code, name and email are required");
-      return;
-    }
+//     const {
+//       code,
+//       name,
+//       email,
+//       address,
+//       city,
+//       state,
+//       country,
+//       pincode,
+//       denomination,
+//       timezone,
+//     } = formData;
 
-    try {
-      setLoading(true);
+//     if (!code || !name || !email) {
+//       alert("Church code, name and email are required");
+//       return;
+//     }
 
-      // ✅ BACKEND-CORRECT PAYLOAD
-      const payload = {
-        chr_app_code: code,
-        chr_app_name: name,
-        chr_app_email: email.toLowerCase(),
-        chr_app_denomination: denomination,
-        chr_app_location: address,
-        chr_app_timezone: timezone,
-        chr_app_city: city,
-        chr_app_state: state,
-        chr_app_country: country,
-        chr_app_pincode: pincode,
-      };
+//     try {
+//       setLoading(true);
 
-      await api("/church/apply", {
-        method: "POST",
-        body: payload,
-      });
+//       // ✅ BACKEND-CORRECT PAYLOAD
+//       const payload = {
+//         chr_app_code: code,
+//         chr_app_name: name,
+//         chr_app_email: email.toLowerCase(),
+//         chr_app_denomination: denomination,
+//         chr_app_location: address,
+//         chr_app_timezone: timezone,
+//         chr_app_city: city,
+//         chr_app_state: state,
+//         chr_app_country: country,
+//         chr_app_pincode: pincode,
+//       };
 
-      alert("Church application submitted for approval ✅");
+//       await api("/church/apply", {
+//         method: "POST",
+//         body: payload,
+//       });
 
-      setFormData({
-        code: "",
-        name: "",
-        email: "",
-        address: "",
-        city: "",
-        state: "",
-        country: "",
-        pincode: "",
-        denomination: "",
-        timezone: "Asia/Kolkata",
-      });
-    } catch (err) {
-      alert(err.message || "Church registration failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+//       alert("Church application submitted for approval ✅");
 
-  /* ================= UI ================= */
+//       setFormData({
+//         code: "",
+//         name: "",
+//         email: "",
+//         address: "",
+//         city: "",
+//         state: "",
+//         country: "",
+//         pincode: "",
+//         denomination: "",
+//         timezone: "Asia/Kolkata",
+//       });
+//     } catch (err) {
+//       alert(err.message || "Church registration failed");
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
 
-  return (
-    <div style={styles.container}>
-      <h2>Church Registration</h2>
+//   /* ================= UI ================= */
 
-      <form onSubmit={handleSubmit} style={styles.form}>
-        <input
-          name="code"
-          placeholder="Church Code"
-          value={formData.code}
-          onChange={handleChange}
-          required
-        />
+//   return (
+//     <div style={styles.container}>
+//       <h2>Church Registration</h2>
 
-        <input
-          name="name"
-          placeholder="Church Name"
-          value={formData.name}
-          onChange={handleChange}
-          required
-        />
+//       <form onSubmit={handleSubmit} style={styles.form}>
+//         <input
+//           name="code"
+//           placeholder="Church Code"
+//           value={formData.code}
+//           onChange={handleChange}
+//           required
+//         />
 
-        <input
-          name="email"
-          type="email"
-          placeholder="Church Email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-        />
+//         <input
+//           name="name"
+//           placeholder="Church Name"
+//           value={formData.name}
+//           onChange={handleChange}
+//           required
+//         />
 
-        <input name="address" placeholder="Address" value={formData.address} onChange={handleChange} />
-        <input name="city" placeholder="City" value={formData.city} onChange={handleChange} />
-        <input name="state" placeholder="State" value={formData.state} onChange={handleChange} />
-        <input name="country" placeholder="Country" value={formData.country} onChange={handleChange} />
-        <input name="pincode" placeholder="Pincode" value={formData.pincode} onChange={handleChange} />
-        <input name="denomination" placeholder="Denomination" value={formData.denomination} onChange={handleChange} />
+//         <input
+//           name="email"
+//           type="email"
+//           placeholder="Church Email"
+//           value={formData.email}
+//           onChange={handleChange}
+//           required
+//         />
 
-        <select name="timezone" value={formData.timezone} onChange={handleChange}>
-          <option value="Asia/Kolkata">Asia/Kolkata</option>
-          <option value="UTC">UTC</option>
-        </select>
+//         <input name="address" placeholder="Address" value={formData.address} onChange={handleChange} />
+//         <input name="city" placeholder="City" value={formData.city} onChange={handleChange} />
+//         <input name="state" placeholder="State" value={formData.state} onChange={handleChange} />
+//         <input name="country" placeholder="Country" value={formData.country} onChange={handleChange} />
+//         <input name="pincode" placeholder="Pincode" value={formData.pincode} onChange={handleChange} />
+//         <input name="denomination" placeholder="Denomination" value={formData.denomination} onChange={handleChange} />
 
-        <button type="submit" disabled={loading}>
-          {loading ? "Submitting..." : "Register Church"}
-        </button>
-      </form>
-    </div>
-  );
-}
+//         <select name="timezone" value={formData.timezone} onChange={handleChange}>
+//           <option value="Asia/Kolkata">Asia/Kolkata</option>
+//           <option value="UTC">UTC</option>
+//         </select>
 
-/* ================= STYLES ================= */
+//         <button type="submit" disabled={loading}>
+//           {loading ? "Submitting..." : "Register Church"}
+//         </button>
+//       </form>
+//     </div>
+//   );
+// }
 
-const styles = {
-  container: {
-    maxWidth: "450px",
-    margin: "40px auto",
-    padding: "20px",
-    border: "1px solid #ddd",
-    borderRadius: "8px",
-  },
-  form: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
-  },
-};
+// /* ================= STYLES ================= */
+
+// const styles = {
+//   container: {
+//     maxWidth: "450px",
+//     margin: "40px auto",
+//     padding: "20px",
+//     border: "1px solid #ddd",
+//     borderRadius: "8px",
+//   },
+//   form: {
+//     display: "flex",
+//     flexDirection: "column",
+//     gap: "10px",
+//   },
+// };

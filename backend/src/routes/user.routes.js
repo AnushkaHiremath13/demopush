@@ -3,17 +3,13 @@
 const express = require("express");
 const router = express.Router();
 
-const { requireCommunity } = require("../middleware/auth");
+const authenticate  = require("../middleware/auth");
 const { getMe } = require("../controllers/UserController");
 
 /* ============================================================
-   USER PROFILE (COMMUNITY ONLY)
+   USER PROFILE
 ============================================================ */
 
-router.get(
-  "/me",
-  requireCommunity,
-  getMe
-);
+router.get("/me", authenticate, getMe);
 
 module.exports = router;

@@ -7,11 +7,18 @@ const {
 } = require("../services/PlatformUserService");
 
 /* ============================================================
-   GET ALL COMMUNITY USERS (PLATFORM)
+   GET ALL PLATFORM USERS
 ============================================================ */
 
 async function getUsers(req, res) {
   try {
+    if (!req.user || !req.user.plt_id) {
+      return res.status(403).json({
+        success: false,
+        message: "Platform authentication required",
+      });
+    }
+
     const users = await getAllPlatformUsers();
 
     return res.status(200).json({
@@ -29,13 +36,19 @@ async function getUsers(req, res) {
 }
 
 /* ============================================================
-   BLOCK USER (PLATFORM)
+   BLOCK USER
 ============================================================ */
 
 async function block(req, res) {
   try {
     const { userId } = req.params;
-    const platformAdminId = req.platform.plt_id;
+
+    if (!req.user || !req.user.plt_id) {
+      return res.status(403).json({
+        success: false,
+        message: "Platform authentication required",
+      });
+    }
 
     if (!userId) {
       return res.status(400).json({
@@ -43,6 +56,8 @@ async function block(req, res) {
         message: "User ID is required",
       });
     }
+
+    const platformAdminId = req.user.plt_id;
 
     await blockUser(userId, platformAdminId);
 
@@ -56,7 +71,7 @@ async function block(req, res) {
     const status =
       error.message.toLowerCase().includes("not found")
         ? 404
-        : error.message.toLowerCase().includes("not authorized")
+        : error.message.toLowerCase().includes("authorized")
         ? 403
         : 400;
 
@@ -68,13 +83,19 @@ async function block(req, res) {
 }
 
 /* ============================================================
-   UNBLOCK USER (PLATFORM)
+   UNBLOCK USER
 ============================================================ */
 
 async function unblock(req, res) {
   try {
     const { userId } = req.params;
-    const platformAdminId = req.platform.plt_id;
+
+    if (!req.user || !req.user.plt_id) {
+      return res.status(403).json({
+        success: false,
+        message: "Platform authentication required",
+      });
+    }
 
     if (!userId) {
       return res.status(400).json({
@@ -82,6 +103,8 @@ async function unblock(req, res) {
         message: "User ID is required",
       });
     }
+
+    const platformAdminId = req.user.plt_id;
 
     await unblockUser(userId, platformAdminId);
 
@@ -95,7 +118,7 @@ async function unblock(req, res) {
     const status =
       error.message.toLowerCase().includes("not found")
         ? 404
-        : error.message.toLowerCase().includes("not authorized")
+        : error.message.toLowerCase().includes("authorized")
         ? 403
         : 400;
 

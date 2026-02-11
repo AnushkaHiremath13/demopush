@@ -1,46 +1,19 @@
 const express = require("express");
 const router = express.Router();
 
-const { requireCommunity } = require("../middleware/auth");
-
-const {
-  pending,
-  approve,
-  reject,
-} = require("../controllers/ChurchFollowerController");
-
 const {
   createChurchApplicant,
 } = require("../controllers/ChurchApplicantController");
+//const { authenticate } = require("../middleware/auth");
 
 /* ============================================================
    PUBLIC – CHURCH APPLICATION
 ============================================================ */
 
 router.post("/apply", createChurchApplicant);
-
-/* ============================================================
-   FOLLOWER APPROVAL ROUTES (CHURCH ADMIN)
-   Scope: COMMUNITY
-   Church is resolved from logged-in user
-============================================================ */
-
-router.get(
-  "/followers/pending",
-  requireCommunity,
-  pending
-);
-
-router.patch(
-  "/followers/:userId/approve",
-  requireCommunity,
-  approve
-);
-
-router.patch(
-  "/followers/:userId/reject",
-  requireCommunity,
-  reject
-);
+//  //🚫 COMMUNITY ROUTES DISABLED FOR NOW
+// router.get("/followers/pending", authenticate, pending);
+//  router.patch("/followers/:userId/approve", authenticate, approve);
+//  router.patch("/followers/:userId/reject", authenticate, reject);
 
 module.exports = router;

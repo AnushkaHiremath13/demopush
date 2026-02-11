@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const { requirePlatform } = require("../middleware/auth");
+const authenticate  = require("../middleware/auth");
 
 /* ============================================================
    DASHBOARD
@@ -9,11 +9,7 @@ const { requirePlatform } = require("../middleware/auth");
 
 const { getDashboardStats } = require("../controllers/DashboardController");
 
-router.get(
-  "/dashboard",
-  requirePlatform,
-  getDashboardStats
-);
+router.get("/dashboard", authenticate, getDashboardStats);
 
 /* ============================================================
    SECURITY LOGS
@@ -21,11 +17,7 @@ router.get(
 
 const { getSecurityLogs } = require("../controllers/SecurityLogController");
 
-router.get(
-  "/security-logs",
-  requirePlatform,
-  getSecurityLogs
-);
+router.get("/security-logs", authenticate, getSecurityLogs);
 
 /* ============================================================
    CHURCH APPLICATIONS
@@ -38,29 +30,10 @@ const {
   rejectChurchApplicant,
 } = require("../controllers/ChurchApplicantController");
 
-router.get(
-  "/church-applicants",
-  requirePlatform,
-  getChurchApplicants
-);
-
-router.get(
-  "/church-applicants/:applicationId",
-  requirePlatform,
-  getChurchApplicantById
-);
-
-router.patch(
-  "/church-applicants/:applicationId/approve",
-  requirePlatform,
-  approveChurchApplicant
-);
-
-router.patch(
-  "/church-applicants/:applicationId/reject",
-  requirePlatform,
-  rejectChurchApplicant
-);
+router.get("/church-applicants", authenticate, getChurchApplicants);
+router.get("/church-applicants/:applicationId", authenticate, getChurchApplicantById);
+router.patch("/church-applicants/:applicationId/approve", authenticate, approveChurchApplicant);
+router.patch("/church-applicants/:applicationId/reject", authenticate, rejectChurchApplicant);
 
 /* ============================================================
    CHURCHES
@@ -74,44 +47,14 @@ const {
   activate,
 } = require("../controllers/PlatformChurchController");
 
-router.get(
-  "/churches",
-  requirePlatform,
-  getAllChurches
-);
-
-router.get(
-  "/churches/:churchId",
-  requirePlatform,
-  getChurchById
-);
-
-router.get(
-  "/church/:churchId",
-  requirePlatform,
-  getChurchById
-);
-
-router.patch(
-  "/churches/:churchId/suspend",
-  requirePlatform,
-  suspend
-);
-
-router.patch(
-  "/churches/:churchId/activate",
-  requirePlatform,
-  activate
-);
-
-router.post(
-  "/churches/:churchId/assign-authority",
-  requirePlatform,
-  assignAuthority
-);
+router.get("/churches", authenticate, getAllChurches);
+router.get("/churches/:churchId", authenticate, getChurchById);
+router.patch("/churches/:churchId/suspend", authenticate, suspend);
+router.patch("/churches/:churchId/activate", authenticate, activate);
+router.post("/churches/:churchId/assign-authority", authenticate, assignAuthority);
 
 /* ============================================================
-   COMMUNITY USERS (PLATFORM CONTROL)
+   USERS
 ============================================================ */
 
 const {
@@ -120,22 +63,8 @@ const {
   unblock,
 } = require("../controllers/PlatformUserController");
 
-router.get(
-  "/users",
-  requirePlatform,
-  getUsers
-);
-
-router.patch(
-  "/users/:userId/block",
-  requirePlatform,
-  block
-);
-
-router.patch(
-  "/users/:userId/unblock",
-  requirePlatform,
-  unblock
-);
+router.get("/users", authenticate, getUsers);
+router.patch("/users/:userId/block", authenticate, block);
+router.patch("/users/:userId/unblock", authenticate, unblock);
 
 module.exports = router;

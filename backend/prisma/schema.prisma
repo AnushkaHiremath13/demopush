@@ -121,6 +121,7 @@ model tbl_church_applicants {
   chr_app_email       String?  @db.VarChar(255)
   chr_app_denomination String? @db.VarChar(100)
   chr_app_location    String?  @db.Text
+  chr_app_address     String?  @db.VarChar(255)   // ✅ ADD THIS LINE
   chr_app_timezone    String?  @db.VarChar(50)
 
   chr_app_city        String?  @db.VarChar(100)
@@ -136,6 +137,7 @@ model tbl_church_applicants {
 
   approver tbl_platform_1? @relation(fields: [chr_app_approved_by], references: [plt_id])
 }
+
 
 //////////////////////////////////////////////////////
 // 7️⃣ CHURCH

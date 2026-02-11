@@ -1,86 +1,59 @@
-// src/controllers/AuthController.js
-
 const {
   registerUser,
   loginUser,
 } = require("../services/AuthService");
 
-/* ============================================================
-   REGISTER (COMMUNITY USER ONLY)
-============================================================ */
+/* ================= REGISTER ================= */
 
 async function register(req, res) {
   try {
-    const {
-      usr_name,
-      usr_email,
-      usr_phone,
-      usr_password,
-      usr_confirm_password,
-    } = req.body;
+    const { name, email, password, church_code } = req.body;
 
-    if (!usr_name || !usr_email || !usr_password || !usr_confirm_password) {
+    if (!name || !email || !password || !church_code) {
       return res.status(400).json({
         success: false,
-        message: "Required fields are missing",
-      });
-    }
-
-    if (usr_password !== usr_confirm_password) {
-      return res.status(400).json({
-        success: false,
-        message: "Passwords do not match",
+        message: "All fields including church code are required",
       });
     }
 
     const user = await registerUser({
-      usr_name,
-      usr_email,
-      usr_phone,
-      usr_password,
+      name,
+      email,
+      password,
+      church_code,
     });
 
     return res.status(201).json({
       success: true,
-      message: "User registered successfully",
+      message: "Registration successful",
       user,
     });
-  } catch (error) {
+  } catch (err) {
     return res.status(400).json({
       success: false,
-      message: error.message,
+      message: err.message,
     });
   }
 }
 
-/* ============================================================
-   LOGIN (COMMUNITY | PLATFORM)
-============================================================ */
+/* ================= LOGIN ================= */
+
 async function login(req, res) {
   try {
-    const { email, password, login_scope } = req.body;
+    const { email, password } = req.body;
 
-    console.log("🔥 LOGIN SERVICE HIT 🔥", req.body);
-
-    if (!email || !password || !login_scope) {
+    if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: "Email, password, and login scope are required",
+        message: "Email and password required",
       });
     }
 
-    const result = await loginUser({
-      email,
-      password,
-      login_scope,
-    });
+    const { token } = await loginUser({ email, password });
 
-    return res.status(200).json({
+    return res.json({
       success: true,
-      message: "Login successful",
-      token: result.token,
-      scope: result.scope,
-      identity: result.identity,
+      token,
     });
   } catch (err) {
     return res.status(401).json({
@@ -89,8 +62,6 @@ async function login(req, res) {
     });
   }
 }
-
-
 
 /* ============================================================
    LOGOUT
